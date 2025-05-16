@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // "types": ["jest-dom", "node"]
+  },
+  "include": [
+    "modules",
+    "modules/__tests__/**/*.ts",
+    "modules/__tests__/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+    // "modules/__tests__"
+  ]
+}

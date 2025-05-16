@@ -1,0 +1,8 @@
+**/.*
+node_modules
+modules
+*.log
+*.md
+*.config.js
+*.json
+*.lock

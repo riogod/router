@@ -1,0 +1,47 @@
+{
+  "name": "@riogz/react-router",
+  "version": "0.0.1-beta.1",
+  "description": "router helpers for React",
+  "main": "dist/index.js",
+  "jsnext:main": "dist/index.es.js",
+  "module": "dist/index.es.js",
+  "files": [
+    "dist"
+  ],
+  "typings": "dist/index.d.ts",
+  "homepage": "https://github.com/riogod/router",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/riogod/router.git"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "router",
+    "html5",
+    "history",
+    "tree",
+    "react",
+    "functional"
+  ],
+  "author": "Vyacheslav Krasnyanskiy",
+  "license": "MIT",
+  "dependencies": {
+    "@riogz/router-transition-path": "^0.0.1-beta.1",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@riogz/router": "^0.0.1-beta.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "@types/react": "^17.0.0",
+    "@testing-library/react": "^12.1.5",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@types/jest": "^29.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "@riogz/router": "^0.0.1-beta.1"
+  }
+}

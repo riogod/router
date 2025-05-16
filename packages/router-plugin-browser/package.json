@@ -1,0 +1,38 @@
+{
+  "name": "@riogz/router-plugin-browser",
+  "version": "0.0.1-beta.1",
+  "description": "Router browser plugin",
+  "main": "dist/index.js",
+  "jsnext:main": "dist/index.es.js",
+  "module": "dist/index.es.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riogod/router.git"
+  },
+  "keywords": [
+    "router",
+    "helpers"
+  ],
+  "author": "Vyacheslav Krasnyanskiy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/riogod/router/issues"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@riogz/router": "^0.0.1-beta.1"
+  },
+  "peerDependencies": {
+    "@riogz/router": "^0.0.1-beta.1"
+  },
+  "homepage": "https://github.com/riogod/router/tree/master/packages/router-plugin-browser",
+  "scripts": {
+    "test": "jest"
+  }
+}

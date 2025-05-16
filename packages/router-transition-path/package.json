@@ -1,0 +1,35 @@
+{
+  "name": "@riogz/router-transition-path",
+  "version": "0.0.1-beta.1",
+  "description": "Router transition path helper function",
+  "main": "dist/index.js",
+  "jsnext:main": "dist/index.es.js",
+  "module": "dist/index.es.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riogod/router.git"
+  },
+  "keywords": [
+    "router",
+    "transition"
+  ],
+  "author": "Vyacheslav Krasnyanskiy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/riogod/router/issues"
+  },
+  "homepage": "https://github.com/riogod/router/tree/master/packages/router-transition-path",
+  "dependencies": {
+  },
+  "peerDependencies": {
+    "@riogz/router": "^0.0.1-beta.1"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

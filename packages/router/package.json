@@ -1,0 +1,40 @@
+{
+  "name": "@riogz/router",
+  "version": "0.0.1-beta.1",
+  "description": "A simple, lightweight, powerful, view-agnostic, modular and extensible router",
+  "main": "dist/index.js",
+  "jsnext:main": "dist/index.es.js",
+  "module": "dist/index.es.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/riogod/router.git"
+  },
+  "keywords": [
+    "router",
+    "routing",
+    "html5",
+    "functional",
+    "reactive",
+    "universal",
+    "isomorphic"
+  ],
+  "author": "Vyacheslav Krasnyanskiy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/riogod/router/issues"
+  },
+  "homepage": "https://github.com/riogod/router",
+  "dependencies": {
+    "route-node": "4.1.1",
+    "@riogz/router-transition-path": "^0.0.1-beta.1",
+    "symbol-observable": "4.0.0"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

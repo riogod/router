@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "isolatedModules": true
+  },
+  "include": ["./modules/__tests__/**/*.ts"]
+}
