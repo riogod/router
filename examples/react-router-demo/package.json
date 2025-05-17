@@ -12,13 +12,13 @@
   "dependencies": {
     "@riogz/react-router": "*",
     "@riogz/router-plugin-browser": "*",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
-    "@types/react": "^17.0.67",
-    "@types/react-dom": "^17.0.20",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.5",
     "@types/node": "^22.11.1",
     "@vitejs/plugin-react-swc": "^3.9.0",
     "eslint": "^9.25.0",

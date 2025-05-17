@@ -32,7 +32,7 @@ const makeConfig = ({
                       require(`./packages/${packageName}/package.json`)
                           .peerDependencies || {}
                   )
-              ),
+              ).concat(['react/jsx-runtime', 'react/jsx-dev-runtime']),
         output: umd
             ? (outputDir ? {
                   dir: outputDir,
