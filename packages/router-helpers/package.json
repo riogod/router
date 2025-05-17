@@ -25,6 +25,9 @@
   },
   "dependencies": {
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "homepage": "https://github.com/riogod/router/tree/master/packages/router-helpers",
   "scripts": {
     "test": "jest"

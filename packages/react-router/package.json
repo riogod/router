@@ -43,5 +43,8 @@
   "peerDependencies": {
     "react": ">=17.0.0",
     "@riogz/router": "^0.0.1-beta.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -24,6 +24,9 @@
     "url": "https://github.com/riogod/router/issues"
   },
   "homepage": "https://github.com/riogod/router/tree/master/packages/router-transition-path",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
   },
   "peerDependencies": {

@@ -7,8 +7,7 @@
     "test": "jest",
     "lint": "eslint packages/*/modules --ext ts,tsx",
     "format": "prettier 'packages/**/*.{js,ts,json}'",
-    "changelog": "lerna-changelog",
-    "release": "lerna publish"
+    "release": "release-it"
   },
   "lint-staged": {
     "packages/**/*.{js,ts}": [
@@ -37,6 +36,7 @@
   },
   "homepage": "https://github.com/riogod/router",
   "devDependencies": {
+    "@release-it/conventional-changelog": "^10.0.1",
     "@rollup/plugin-commonjs": "^26.0.3",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
@@ -58,6 +58,7 @@
     "eslint-plugin-jsx-a11y": "^6.5.1",
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "glob": "^11.0.2",
     "husky": "^9.1.7",
     "jest": "^29.0.0",
     "jest-environment-jsdom": "^29.0.0",
@@ -66,6 +67,7 @@
     "prettier": "^3.5.3",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
+    "release-it": "^19.0.2",
     "rollup": "^4.18.0",
     "sinon-chai": "^4.0.0",
     "ts-jest": "^29.0.0",

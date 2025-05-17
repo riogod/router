@@ -31,5 +31,8 @@
   "peerDependencies": {
     "@riogz/router": "^0.0.1-beta.1"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "homepage": "https://github.com/riogod/router/tree/master/packages/router-plugin-logger"
 }

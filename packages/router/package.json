@@ -29,6 +29,9 @@
     "url": "https://github.com/riogod/router/issues"
   },
   "homepage": "https://github.com/riogod/router",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "route-node": "4.1.1",
     "@riogz/router-transition-path": "^0.0.1-beta.1",
