@@ -1,6 +1,6 @@
 {
   "name": "@riogz/react-router",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "router helpers for React",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -28,14 +28,14 @@
   "author": "Vyacheslav Krasnyanskiy",
   "license": "MIT",
   "dependencies": {
-    "@riogz/router-transition-path": "^0.0.2"
+    "@riogz/router-transition-path": "^0.0.3"
   },
   "devDependencies": {
-    "@riogz/router": "^0.0.2"
+    "@riogz/router": "^0.0.3"
   },
   "peerDependencies": {
     "react": ">=17.0.0",
-    "@riogz/router": "^0.0.2"
+    "@riogz/router": "^0.0.3"
   },
   "publishConfig": {
     "access": "public"

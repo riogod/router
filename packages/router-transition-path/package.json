@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-transition-path",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Router transition path helper function",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -29,7 +29,7 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@riogz/router": "^0.0.2"
+    "@riogz/router": "^0.0.3"
   },
   "scripts": {
     "test": "jest"

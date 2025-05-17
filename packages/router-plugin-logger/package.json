@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-plugin-logger",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Router browser plugin",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -25,10 +25,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@riogz/router": "^0.0.2"
+    "@riogz/router": "^0.0.3"
   },
   "peerDependencies": {
-    "@riogz/router": "^0.0.2"
+    "@riogz/router": "^0.0.3"
   },
   "publishConfig": {
     "access": "public"
