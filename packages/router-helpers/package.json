@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-helpers",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Router helpers for comparing and checking routes",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",

@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A simple, lightweight, powerful, view-agnostic, modular and extensible router",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "route-node": "4.1.1",
-    "@riogz/router-transition-path": "^0.0.1",
+    "@riogz/router-transition-path": "^0.0.2",
     "symbol-observable": "4.0.0"
   },
   "scripts": {
