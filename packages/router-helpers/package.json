@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-helpers",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.1",
   "description": "Router helpers for comparing and checking routes",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -23,8 +23,7 @@
   "bugs": {
     "url": "https://github.com/riogod/router/issues"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "publishConfig": {
     "access": "public"
   },

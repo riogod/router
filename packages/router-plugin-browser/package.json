@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-plugin-browser",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.1",
   "description": "Router browser plugin",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -23,13 +23,12 @@
   "bugs": {
     "url": "https://github.com/riogod/router/issues"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@riogz/router": "^0.0.1-beta.1"
+    "@riogz/router": "^0.0.1"
   },
   "peerDependencies": {
-    "@riogz/router": "^0.0.1-beta.1"
+    "@riogz/router": "^0.0.1"
   },
   "homepage": "https://github.com/riogod/router/tree/master/packages/router-plugin-browser",
   "publishConfig": {
