@@ -1,8 +1,6 @@
-import React from 'react';
 import { createRouter, type Router } from '@riogz/router';
-import { RouterProvider, withRouter, BaseLink, RouteNode } from '@riogz/react-router';
+import { RouterProvider,  Link, RouteNode } from '@riogz/react-router';
 import browserPlugin from '@riogz/router-plugin-browser';
-const Link = withRouter(BaseLink) as React.FC<any>;
 
 // Описание маршрутов (без notFound!)
 const routes = [

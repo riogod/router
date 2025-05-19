@@ -1,8 +1,8 @@
-import React, { SFC, ComponentType } from 'react'
+import React, { ComponentType, FC } from 'react'
 import { routeContext } from '../context'
 import { RouteContext } from '../types'
 
-function withRoute<P>(BaseComponent: ComponentType<P & RouteContext>): SFC<P> {
+function withRoute<P>(BaseComponent: ComponentType<P & RouteContext>): FC<P> {
     return function withRoute(props) {
         return (
             <routeContext.Consumer>
