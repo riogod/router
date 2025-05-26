@@ -6,6 +6,7 @@
  * It uses console groups for organized output and gracefully degrades when console
  * features are not available.
  * 
+ * @module @riogz/router-plugin-logger
  */
 
 import { PluginFactory } from '@riogz/router'

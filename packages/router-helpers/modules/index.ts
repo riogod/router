@@ -5,6 +5,7 @@
  * in hierarchical router systems. It offers efficient pattern matching for route names
  * with support for both string and object route representations.
  * 
+ * @module @riogz/router-helpers
  */
 
 /** Regular expression pattern for matching dot followed by any characters or end of string */

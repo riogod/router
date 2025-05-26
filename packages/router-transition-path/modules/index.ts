@@ -10,6 +10,7 @@
  * - Handle parameter changes and route hierarchy analysis
  * - Support for reload options and complex route structures
  * 
+ * @module @riogz/router-transition-path
  */
 
 import transitionPath, { nameToIDs } from './transitionPath'
