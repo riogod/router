@@ -16,7 +16,7 @@ describe('core/utils', () => {
             router.navigate('users.view', { id: 1 }, () => {
                 expect(router.isActive('users.view', { id: 1 })).toBe(true)
                 expect(router.isActive('users.view', { id: 2 })).toBe(false)
-                expect(router.isActive('users.view')).toBe(false)
+                expect(router.isActive('users.view')).toBe(true) // Изменено: теперь true без параметров
                 expect(router.isActive('users')).toBe(true)
                 expect(router.isActive('users', {}, true)).toBe(false)
 
@@ -185,6 +185,22 @@ describe('isActive specific tests', () => {
     it('should return false if router has not started (no active state)', () => {
         const localRouter = createTestRouter(); // Не вызываем .start()
         expect(localRouter.isActive('users.view', { id: 1 })).toBe(false);
+    });
+
+    it('should ignore params when not provided explicitly', (done) => {
+        const localRouter = createTestRouter();
+        localRouter.start('/users/view/1', () => {
+            // Новое поведение: без параметров игнорирует параметры
+            expect(localRouter.isActive('users.view')).toBe(true);
+            expect(localRouter.isActive('users')).toBe(true);
+            
+            // С параметрами работает как раньше
+            expect(localRouter.isActive('users.view', { id: '1' })).toBe(true);
+            expect(localRouter.isActive('users.view', { id: '2' })).toBe(false);
+            
+            localRouter.stop();
+            done();
+        });
     });
 
     // Тесты для strictEquality

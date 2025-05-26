@@ -12,6 +12,7 @@
   "dependencies": {
     "@riogz/react-router": "*",
     "@riogz/router-plugin-browser": "*",
+    "@riogz/router-plugin-logger": "*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

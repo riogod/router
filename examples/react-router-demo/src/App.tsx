@@ -1,64 +1,65 @@
 import { createRouter, type Route, type Router } from '@riogz/router';
-import { RouterProvider, Link, RouteNode, useRoute } from '@riogz/react-router';
+import { RouterProvider, Link, RouteNode, useRouter } from '@riogz/react-router';
 import browserPlugin from '@riogz/router-plugin-browser';
+import loggerPlugin from '@riogz/router-plugin-logger';
 
-// Описание маршрутов (без notFound!)
 const routes: Route[] = [
   {
     name: 'home', 
     path: '/', 
-    onEnterRoute: async (state, fromState) => {
-      console.log('[Route] onEnterRoute', state, fromState);
+    onEnterRoute: async (_state, _fromState) => {
+      console.log('[Route] onEnterRoute callback');
     }, 
-    onExitRoute: async (state, fromState) => {
-      console.log('[Route] onExitRoute', state, fromState);
+    onExitRoute: async (_state, _fromState) => {
+      console.log('[Route] onExitRoute callback');
     }
   },
   {
     name: 'about', 
     path: '/about', 
-    onEnterRoute: async (state, fromState) => {
-      console.log('[Route] onEnterRoute', state, fromState);
+    onEnterRoute: async (_state, _fromState) => {
+      console.log('[Route] onEnterRoute callback');
     }
   },
   {
     name: 'profile', 
     path: '/profile/:userId', 
-    onEnterRoute: async (state, fromState) => {
-      console.log('[Route] onEnterRoute', state, fromState);
+    onEnterRoute: async (_state, _fromState) => {
+      console.log('[Route] onEnterRoute callback');
     }, 
-    onRouteInActiveChain: async (state, fromState) => {
-      console.log('[Route] onRouteInActiveChain by profile', state, fromState);
+    onRouteInActiveChain: async (_state, _fromState) => {
+      console.log('[Route] onRouteInActiveChain callback');
     }, 
     children: [
       {
         name: 'edit', 
         browserTitle: async (state) => `Редактировать профиль пользователя ${state.params.userId}`, 
         path: '/edit', 
-        onEnterRoute: async (state, fromState) => {
-          console.log('[Route] onEnterRoute', state, fromState);
+        onEnterRoute: async (_state, _fromState) => {
+          console.log('[Route] onEnterRoute callback');
         }
       },
       {
         name: 'view', 
         browserTitle: 'Профиль пользователя', 
         path: '/view', 
-        onEnterRoute: async (state, fromState) => {
-          console.log('[Route] onEnterRoute', state, fromState);
+        onEnterRoute: async (_state, _fromState) => {
+          console.log('[Route] onEnterRoute callback');
         }
-      },
+      }
     ]
   },
 ];
 
-// Инициализация роутера с browserPlugin ДО start
+// Инициализация роутера с плагинами ДО start
 const router: Router = createRouter(routes, {
   allowNotFound: true
 });
+router.usePlugin(loggerPlugin);
 router.usePlugin(browserPlugin());
 router.start();
 
-console.log('[router-demo] router started');
+console.log('[router-demo] Router started');
 
 function Home() {
   console.log('[RouteNode] Home');
@@ -78,10 +79,14 @@ function NotFound() {
   return <h2>Страница не найдена</h2>;
 }
 
-function AppLayout() {
-  const route = useRoute();
 
-  console.log('[AppLayout] route', route);
+
+function AppLayout() {
+  const router = useRouter();
+  
+  const isProfileActive = router.isActive('profile');
+  
+
   return <> <nav style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
     <Link routeName="home">Главная</Link>
     <Link routeName="about">О проекте</Link>
@@ -89,7 +94,7 @@ function AppLayout() {
       Профиль
     </Link>
   </nav>
-    {route.route.meta?.params['profile'] && <nav style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+    {isProfileActive && <nav style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
       <Link routeName="profile.edit" routeParams={{ userId: '42' }}>
         Редактировать профиль
       </Link>
@@ -105,6 +110,12 @@ function AppLayout() {
     </RouteNode>
     <RouteNode nodeName="profile">
       {({ route }) => <Profile userId={route.params.userId} />}
+    </RouteNode>
+    <RouteNode nodeName="profile.edit">
+      {({ route }) => <div><Profile userId={route.params.userId} /><p>Режим редактирования</p></div>}
+    </RouteNode>
+    <RouteNode nodeName="profile.view">
+      {({ route }) => <div><Profile userId={route.params.userId} /><p>Режим просмотра</p></div>}
     </RouteNode>
     <RouteNode nodeName="@@router/UNKNOWN_ROUTE">
       {() => <NotFound />}

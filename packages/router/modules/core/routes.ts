@@ -68,29 +68,57 @@ export default function withRoutes<Dependencies>(
             return router
         }
 
-        router.isActive = (
-            name,
-            params = {},
-            strictEquality = false,
-            ignoreQueryParams = true
-        ) => {
+        // Перегрузки для isActive
+        function isActiveOverload(name: string): boolean
+        function isActiveOverload(name: string, params: any): boolean
+        function isActiveOverload(name: string, params: any, strictEquality: boolean): boolean
+        function isActiveOverload(name: string, params: any, strictEquality: boolean, ignoreQueryParams: boolean): boolean
+        function isActiveOverload(
+            name: string,
+            params?: any,
+            strictEquality: boolean = false,
+            ignoreQueryParams: boolean = true
+        ): boolean {
             const activeState = router.getState()
 
             if (!activeState) return false
 
+            // Определяем, были ли параметры переданы явно
+            const paramsProvided = arguments.length > 1
+
+            if (!paramsProvided) {
+                // Если параметры не указаны, проверяем только иерархию имен
+                if (strictEquality) {
+                    return activeState.name === name
+                }
+                
+                const activeNameParts = activeState.name.split('.')
+                const targetNameParts = name.split('.')
+                
+                // Проверяем, является ли активный маршрут потомком целевого
+                if (targetNameParts.length <= activeNameParts.length) {
+                    return targetNameParts.every((part, index) => 
+                        activeNameParts[index] === part
+                    )
+                }
+                return false
+            }
+
+            // Параметры переданы - используем стандартную логику
+            const targetState = router.makeState(name, params)
+            
             if (strictEquality || activeState.name === name) {
                 return router.areStatesEqual(
-                    router.makeState(name, params),
+                    targetState,
                     activeState,
                     ignoreQueryParams
                 )
             }
 
-            return router.areStatesDescendants(
-                router.makeState(name, params),
-                activeState
-            )
+            return router.areStatesDescendants(targetState, activeState)
         }
+        
+        router.isActive = isActiveOverload
 
         router.buildPath = (route, params) => {
             if (route === constants.UNKNOWN_ROUTE) {
