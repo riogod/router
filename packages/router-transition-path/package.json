@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-transition-path",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A utility library for calculating transition paths between router states and optimizing component updates during navigation.",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -32,7 +32,7 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@riogz/router": "^0.0.3"
+    "@riogz/router": "^0.0.4"
   },
   "scripts": {
     "test": "jest"
