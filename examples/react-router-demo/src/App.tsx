@@ -1,5 +1,5 @@
 import { createRouter, type Route, type Router } from '@riogz/router';
-import { RouterProvider, Link, RouteNode, useRouter } from '@riogz/react-router';
+import { RouterProvider, Link, RouteNode, useRoute } from '@riogz/react-router';
 import browserPlugin from '@riogz/router-plugin-browser';
 import loggerPlugin from '@riogz/router-plugin-logger';
 
@@ -82,10 +82,10 @@ function NotFound() {
 
 
 function AppLayout() {
-  const router = useRouter();
+  const { router } = useRoute();
   
   const isProfileActive = router.isActive('profile');
-  
+  console.log('[AppLayout] isProfileActive:', isProfileActive);
 
   return <> <nav style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
     <Link routeName="home">Главная</Link>
