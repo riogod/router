@@ -1,5 +1,5 @@
 [![npm version](https://badge.fury.io/js/@riogz%2Frouter.svg)](https://badge.fury.io/js/@riogz%2Frouter)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router@latest&treeshake=[*])
 
 # @riogz/router
 
@@ -73,25 +73,25 @@ function Navigation() {
 
 ### Core Packages
 
-| Package | Description | Version |
-|---------|-------------|---------|
-| **[@riogz/router](./packages/router)** | Core router | [![npm](https://img.shields.io/npm/v/@riogz/router.svg)](https://www.npmjs.com/package/@riogz/router) |
-| **[@riogz/react-router](./packages/react-router)** | React integration with hooks and components | [![npm](https://img.shields.io/npm/v/@riogz/react-router.svg)](https://www.npmjs.com/package/@riogz/react-router) |
+| Package | Description | Version | Bundle |
+|---------|-------------|---------|----------|
+| **[@riogz/router](./packages/router)** | Core router | [![npm](https://img.shields.io/npm/v/@riogz/router.svg)](https://www.npmjs.com/package/@riogz/router) | ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router@latest&treeshake=[*]) |
+| **[@riogz/react-router](./packages/react-router)** | React integration with hooks and components | [![npm](https://img.shields.io/npm/v/@riogz/react-router.svg)](https://www.npmjs.com/package/@riogz/react-router) | ![gzip](https://deno.bundlejs.com/badge?q=@riogz/react-router@latest&treeshake=[*]) |
 
 ### Plugins
 
-| Package | Description | Version |
-|---------|-------------|---------|
-| **[@riogz/router-plugin-browser](./packages/router-plugin-browser)** | Browser integration (History API, hash) | [![npm](https://img.shields.io/npm/v/@riogz/router-plugin-browser.svg)](https://www.npmjs.com/package/@riogz/router-plugin-browser) |
-| **[@riogz/router-plugin-logger](./packages/router-plugin-logger)** | Transition logging for debugging | [![npm](https://img.shields.io/npm/v/@riogz/router-plugin-logger.svg)](https://www.npmjs.com/package/@riogz/router-plugin-logger) |
-| **[@riogz/router-plugin-persistent-params](./packages/router-plugin-persistent-params)** | Parameter persistence between transitions | [![npm](https://img.shields.io/npm/v/@riogz/router-plugin-persistent-params.svg)](https://www.npmjs.com/package/@riogz/router-plugin-persistent-params) |
+| Package | Description | Version | Bundle |
+|---------|-------------|---------|----------|
+| **[@riogz/router-plugin-browser](./packages/router-plugin-browser)** | Browser integration (History API, hash) | [![npm](https://img.shields.io/npm/v/@riogz/router-plugin-browser.svg)](https://www.npmjs.com/package/@riogz/router-plugin-browser) | ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router-plugin-browser@latest&treeshake=[*]) |
+| **[@riogz/router-plugin-logger](./packages/router-plugin-logger)** | Transition logging for debugging | [![npm](https://img.shields.io/npm/v/@riogz/router-plugin-logger.svg)](https://www.npmjs.com/package/@riogz/router-plugin-logger) | ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router-plugin-logger@latest&treeshake=[*]) |
+| **[@riogz/router-plugin-persistent-params](./packages/router-plugin-persistent-params)** | Parameter persistence between transitions | [![npm](https://img.shields.io/npm/v/@riogz/router-plugin-persistent-params.svg)](https://www.npmjs.com/package/@riogz/router-plugin-persistent-params) | ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router-plugin-persistent-params@latest&treeshake=[*]) |
 
 ### Utilities
 
-| Package | Description | Version |
-|---------|-------------|---------|
-| **[@riogz/router-helpers](./packages/router-helpers)** | Route manipulation utilities | [![npm](https://img.shields.io/npm/v/@riogz/router-helpers.svg)](https://www.npmjs.com/package/@riogz/router-helpers) |
-| **[@riogz/router-transition-path](./packages/router-transition-path)** | Transition path computation | [![npm](https://img.shields.io/npm/v/@riogz/router-transition-path.svg)](https://www.npmjs.com/package/@riogz/router-transition-path) |
+| Package | Description | Version | Bundle |
+|---------|-------------|---------|-----------|
+| **[@riogz/router-helpers](./packages/router-helpers)** | Route manipulation utilities | [![npm](https://img.shields.io/npm/v/@riogz/router-helpers.svg)](https://www.npmjs.com/package/@riogz/router-helpers) | ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router-helpers@latest&treeshake=[*]) |
+| **[@riogz/router-transition-path](./packages/router-transition-path)** | Transition path computation | [![npm](https://img.shields.io/npm/v/@riogz/router-transition-path.svg)](https://www.npmjs.com/package/@riogz/router-transition-path) | ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router-transition-path@latest&treeshake=[*]) |
 
 ## 🎯 Core Concepts
 
