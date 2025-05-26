@@ -34,6 +34,19 @@ export default function withRoutes<Dependencies>(
 
             if (route.defaultParams)
                 router.config.defaultParams[route.name] = route.defaultParams
+
+            // Register new lifecycle hooks
+            if (route.onEnterRoute)
+                router.registerOnEnterRoute(route.name, route.onEnterRoute)
+
+            if (route.onExitRoute)
+                router.registerOnExitRoute(route.name, route.onExitRoute)
+
+            if (route.onRouteInActiveChain)
+                router.registerOnRouteInActiveChain(route.name, route.onRouteInActiveChain)
+
+            if (route.browserTitle)
+                router.registerBrowserTitle(route.name, route.browserTitle)
         }
 
         router.rootNode = rootNode

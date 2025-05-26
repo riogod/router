@@ -21,12 +21,16 @@ export interface Route<
 > {
     name: string
     path: string
+    browserTitle?: string | ((state: State) => Promise<string>)
     canActivate?: ActivationFnFactory<Dependencies>
     forwardTo?: string
     children?: Array<Route<Dependencies>>
     encodeParams?(stateParams: Params): Params
     decodeParams?(pathParams: Params): Params
     defaultParams?: Params
+    onEnterRoute?: (state: State, fromState: State) => Promise<void>
+    onExitRoute?: (state: State, fromState: State) => Promise<void>
+    onRouteInActiveChain?: (state: State, fromState: State) => Promise<void>
 }
 
 export interface Options {
@@ -132,6 +136,25 @@ export interface Router<
         { [key: string]: ActivationFn },
         { [key: string]: ActivationFn }
     ]
+
+    getRouteLifecycleFactories(): {
+        onEnterRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onExitRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onRouteInActiveChain: { [key: string]: (state: State, fromState: State) => Promise<void> }
+    }
+    getRouteLifecycleFunctions(): {
+        onEnterRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onExitRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onRouteInActiveChain: { [key: string]: (state: State, fromState: State) => Promise<void> }
+    }
+
+    getBrowserTitleFunctions(): { [key: string]: string | ((state: State) => Promise<string>) }
+
+    // Internal methods for registering route lifecycle hooks
+    registerOnEnterRoute(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
+    registerOnExitRoute(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
+    registerOnRouteInActiveChain(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
+    registerBrowserTitle(name: string, handler: string | ((state: State) => Promise<string>)): Router<Dependencies>
 
     usePlugin(...plugins: Array<PluginFactory<Dependencies>>): Unsubscribe
     addPlugin(plugin: Plugin): Router<Dependencies>
