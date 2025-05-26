@@ -2,8 +2,47 @@ import { constants, errorCodes } from '../constants'
 import { Router } from '../types/router'
 import transition from '../transition'
 
+/** No-operation function used as default callback */
 const noop = () => {}
 
+/**
+ * Enhances a router with navigation capabilities.
+ * 
+ * This module provides the core navigation functionality including:
+ * - Programmatic navigation to routes
+ * - Navigation to default routes
+ * - Transition cancellation
+ * - State transition management
+ * - Error handling for navigation failures
+ * 
+ * Navigation supports various options like:
+ * - Replace vs push navigation
+ * - Force reload of same routes
+ * - Skip transition process
+ * - Custom navigation options
+ * 
+ * @template Dependencies - Type of dependencies available during navigation
+ * @param router - Router instance to enhance with navigation capabilities
+ * @returns Enhanced router with navigation functionality
+ * 
+ * @example
+ * ```typescript
+ * // Basic navigation
+ * router.navigate('user', { id: '123' })
+ * 
+ * // Navigation with options
+ * router.navigate('user', { id: '123' }, { replace: true })
+ * 
+ * // Navigation with callback
+ * router.navigate('user', { id: '123' }, (err, state) => {
+ *   if (err) {
+ *     console.error('Navigation failed:', err)
+ *   } else {
+ *     console.log('Navigation successful:', state)
+ *   }
+ * })
+ * ```
+ */
 export default function withNavigation<Dependencies>(
     router: Router<Dependencies>
 ): Router<Dependencies> {
@@ -12,6 +51,26 @@ export default function withNavigation<Dependencies>(
     router.navigate = navigate
     router.navigate = navigate
 
+    /**
+     * Navigate to the default route specified in router options.
+     * 
+     * @param args - Variable arguments: options and/or callback
+     * @returns Function to cancel the navigation
+     * 
+     * @example
+     * ```typescript
+     * // Navigate to default route
+     * router.navigateToDefault()
+     * 
+     * // With options
+     * router.navigateToDefault({ replace: true })
+     * 
+     * // With callback
+     * router.navigateToDefault((err, state) => {
+     *   // Handle result
+     * })
+     * ```
+     */
     router.navigateToDefault = (...args) => {
         const opts = typeof args[0] === 'object' ? args[0] : {}
         const done =
@@ -34,6 +93,20 @@ export default function withNavigation<Dependencies>(
         return () => {}
     }
 
+    /**
+     * Cancel the current ongoing navigation transition.
+     * 
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * // Start navigation
+     * router.navigate('user', { id: '123' })
+     * 
+     * // Cancel if needed
+     * router.cancel()
+     * ```
+     */
     router.cancel = () => {
         if (cancelCurrentTransition) {
             cancelCurrentTransition('navigate')
@@ -43,6 +116,20 @@ export default function withNavigation<Dependencies>(
         return router
     }
 
+    /**
+     * Core navigation function that handles route navigation with various overloads.
+     * 
+     * Supports multiple call signatures:
+     * - navigate(name)
+     * - navigate(name, params)
+     * - navigate(name, params, options)
+     * - navigate(name, params, options, callback)
+     * - navigate(name, callback)
+     * - navigate(name, params, callback)
+     * 
+     * @param args - Variable arguments for navigation
+     * @returns Function to cancel the navigation
+     */
     function navigate(...args) {
         const name = args[0]
         const lastArg = args[args.length - 1]
@@ -132,6 +219,38 @@ export default function withNavigation<Dependencies>(
         )
     }
 
+    /**
+     * Execute a state transition with full lifecycle management.
+     * 
+     * This method handles the complete transition process including:
+     * - Cancelling any ongoing transitions
+     * - Firing transition start events
+     * - Running the transition pipeline
+     * - Handling transition results and errors
+     * - Updating router state on success
+     * 
+     * @param toState - Target state to transition to
+     * @param fromState - Current state being transitioned from
+     * @param options - Navigation options
+     * @param done - Callback function for transition completion
+     * @returns Function to cancel the transition
+     * 
+     * @example
+     * ```typescript
+     * const cancelFn = router.transitionToState(
+     *   targetState,
+     *   currentState,
+     *   { replace: true },
+     *   (err, finalState) => {
+     *     if (err) {
+     *       console.error('Transition failed:', err)
+     *     } else {
+     *       console.log('Transition completed:', finalState)
+     *     }
+     *   }
+     * )
+     * ```
+     */
     router.transitionToState = (
         toState,
         fromState,

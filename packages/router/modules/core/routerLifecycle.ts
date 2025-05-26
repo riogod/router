@@ -1,15 +1,99 @@
 import { constants, errorCodes } from '../constants'
 import { Router } from '../types/router'
 
+/** No-operation function used as default callback */
 const noop = function() {}
 
+/**
+ * Enhances a router with lifecycle management capabilities.
+ * 
+ * This module provides functionality for:
+ * - Starting the router with initial state
+ * - Stopping the router and cleaning up
+ * - Managing router started state
+ * - Handling initial navigation and default routes
+ * - Error handling for startup scenarios
+ * 
+ * The router lifecycle includes:
+ * 1. Start: Initialize router with a path, state, or default route
+ * 2. Running: Router is active and handling navigation
+ * 3. Stop: Router is stopped and state is cleared
+ * 
+ * @template Dependencies - Type of dependencies available in the router
+ * @param router - Router instance to enhance with lifecycle capabilities
+ * @returns Enhanced router with start/stop functionality
+ * 
+ * @example
+ * ```typescript
+ * // Start with current browser path
+ * router.start('/users/123', (err, state) => {
+ *   if (err) {
+ *     console.error('Failed to start router:', err)
+ *   } else {
+ *     console.log('Router started with state:', state)
+ *   }
+ * })
+ * 
+ * // Start with state object
+ * router.start({
+ *   name: 'user',
+ *   params: { id: '123' },
+ *   path: '/users/123'
+ * })
+ * 
+ * // Stop the router
+ * router.stop()
+ * ```
+ */
 export default function withRouterLifecycle<Dependencies>(
     router: Router<Dependencies>
 ): Router<Dependencies> {
     let started = false
 
+    /**
+     * Check if the router is currently started and active.
+     * 
+     * @returns True if router is started, false otherwise
+     * 
+     * @example
+     * ```typescript
+     * if (router.isStarted()) {
+     *   router.navigate('home')
+     * } else {
+     *   console.log('Router not started yet')
+     * }
+     * ```
+     */
     router.isStarted = () => started
 
+    /**
+     * Start the router with optional initial path or state.
+     * 
+     * The router can be started in several ways:
+     * - With a path string: router.start('/users/123')
+     * - With a state object: router.start({ name: 'user', params: { id: '123' } })
+     * - Without arguments: uses default route if configured
+     * - With callback: router.start('/path', callback)
+     * 
+     * @param args - Variable arguments for router startup
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * // Start with path
+     * router.start('/users/123')
+     * 
+     * // Start with callback
+     * router.start((err, state) => {
+     *   if (!err) console.log('Started with state:', state)
+     * })
+     * 
+     * // Start with path and callback
+     * router.start('/users/123', (err, state) => {
+     *   // Handle startup result
+     * })
+     * ```
+     */
     //@ts-ignore TODO: Review arguments and return type of router.start for better type safety
     router.start = (...args) => {
         const options = router.getOptions()
@@ -28,7 +112,7 @@ export default function withRouterLifecycle<Dependencies>(
         started = true
         router.invokeEventListeners(constants.ROUTER_START)
 
-        // callback
+        /** Callback function for handling startup completion */
         const cb = (err, state?, invokeErrCb = true) => {
             if (!err)
                 router.invokeEventListeners(
@@ -61,9 +145,11 @@ export default function withRouterLifecycle<Dependencies>(
             startState =
                 startPath === undefined ? null : router.matchPath(startPath)
 
-            // Navigate to default function
+            /** Navigate to default route */
             const navigateToDefault = () =>
                 router.navigateToDefault({ replace: true }, done)
+            
+            /** Redirect to a specific route */
             const redirect = route =>
                 router.navigate(
                     route.name,
@@ -72,6 +158,7 @@ export default function withRouterLifecycle<Dependencies>(
                     done
                 )
 
+            /** Transition to a specific state */
             const transitionToState = state => {
                 router.transitionToState(
                     state,
@@ -85,6 +172,7 @@ export default function withRouterLifecycle<Dependencies>(
                     }
                 )
             }
+            
             // If matched start path
             if (startState) {
                 transitionToState(startState)
@@ -108,6 +196,25 @@ export default function withRouterLifecycle<Dependencies>(
         return router
     }
 
+    /**
+     * Stop the router and clear its state.
+     * 
+     * This will:
+     * - Set the router state to null
+     * - Mark the router as not started
+     * - Fire the router stop event
+     * 
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * // Stop the router
+     * router.stop()
+     * 
+     * // Check if stopped
+     * console.log('Router started:', router.isStarted()) // false
+     * ```
+     */
     router.stop = () => {
         if (started) {
             router.setState(null)
