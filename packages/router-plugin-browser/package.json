@@ -1,7 +1,7 @@
 {
   "name": "@riogz/router-plugin-browser",
   "version": "0.0.3",
-  "description": "Router browser plugin",
+  "description": "Browser plugin for @riogz/router integration with browser history",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
   "module": "dist/index.es.js",

@@ -1,7 +1,7 @@
 {
   "name": "@riogz/router-transition-path",
   "version": "0.0.3",
-  "description": "Router transition path helper function",
+  "description": "A utility library for calculating transition paths between router states and optimizing component updates during navigation.",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
   "module": "dist/index.es.js",
@@ -15,8 +15,11 @@
     "url": "git+https://github.com/riogod/router.git"
   },
   "keywords": [
+    "riogz",
     "router",
-    "transition"
+    "transition",
+    "utility",
+    "navigation"
   ],
   "author": "Vyacheslav Krasnyanskiy",
   "license": "MIT",

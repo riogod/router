@@ -4,6 +4,48 @@ import { constants, errorCodes } from '../constants'
 import { Router } from '../types/router'
 import { State, NavigationOptions, DoneFn } from '../types/base'
 
+/**
+ * Handles the complete transition process between router states.
+ * 
+ * This function orchestrates the entire navigation lifecycle including:
+ * - Route deactivation guards (canDeactivate)
+ * - Route exit hooks (onExitRoute)
+ * - Route activation guards (canActivate)
+ * - Route enter hooks (onEnterRoute)
+ * - Active chain hooks (onRouteInActiveChain)
+ * - Browser title updates
+ * - Middleware execution
+ * 
+ * The transition can be cancelled at any point and includes comprehensive
+ * error handling for each phase of the navigation process.
+ * 
+ * @param router - The router instance managing the transition
+ * @param toState - The target state to navigate to
+ * @param fromState - The current state being navigated from (null for initial navigation)
+ * @param opts - Navigation options controlling transition behavior
+ * @param callback - Callback function called when transition completes or fails
+ * @returns Function to cancel the ongoing transition
+ * 
+ * @example
+ * ```typescript
+ * const cancelTransition = transition(
+ *   router,
+ *   targetState,
+ *   currentState,
+ *   { replace: false },
+ *   (err, finalState) => {
+ *     if (err) {
+ *       console.error('Transition failed:', err)
+ *     } else {
+ *       console.log('Transition successful:', finalState)
+ *     }
+ *   }
+ * )
+ * 
+ * // Cancel if needed
+ * cancelTransition()
+ * ```
+ */
 export default function transition(
     router: Router,
     toState: State,
@@ -25,13 +67,19 @@ export default function transition(
         onRouteInActiveChain: onRouteInActiveChainFunctions
     } = router.getRouteLifecycleFunctions()
     const browserTitleFunctions = router.getBrowserTitleFunctions()
+    
+    /** Check if the transition has been cancelled */
     const isCancelled = () => cancelled
+    
+    /** Cancel the ongoing transition */
     const cancel = () => {
         if (!cancelled && !completed) {
             cancelled = true
             callback({ code: errorCodes.TRANSITION_CANCELLED }, null)
         }
     }
+    
+    /** Complete the transition with success or error */
     const done = (err, state) => {
         completed = true
 
@@ -49,6 +97,8 @@ export default function transition(
 
         callback(err, state || toState)
     }
+    
+    /** Create error object with additional context */
     const makeError = (base, err) => ({
         ...base,
         ...(err instanceof Object ? err : { error: err })
@@ -73,6 +123,7 @@ export default function transition(
         onPath = toStateIds.slice(0, -1)
     }
 
+    /** Handle route deactivation guards */
     const canDeactivate =
         !fromState || opts.forceDeactivate
             ? []
@@ -102,6 +153,7 @@ export default function transition(
                   )
               }
 
+    /** Handle route activation guards */
     const canActivate = isUnknownRoute
         ? []
         : (toState, fromState, cb) => {
@@ -130,7 +182,7 @@ export default function transition(
               )
           }
 
-    // onExitRoute hooks - called for routes being deactivated
+    /** Handle route exit lifecycle hooks */
     const onExitRoute = !fromState || !toDeactivate.length
         ? []
         : (toState, fromState, cb) => {
@@ -143,7 +195,7 @@ export default function transition(
                   .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
           }
 
-    // onEnterRoute hooks - called for routes being activated
+    /** Handle route enter lifecycle hooks */
     const onEnterRoute = isUnknownRoute || !toActivate.length
         ? []
         : (toState, fromState, cb) => {
@@ -156,7 +208,7 @@ export default function transition(
                   .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
           }
 
-    // onRouteInActiveChain hooks - called for routes that remain on the path
+    /** Handle active chain lifecycle hooks for routes that remain on the path */
     const onRouteInActiveChain = !onPath.length
         ? []
         : (toState, fromState, cb) => {
@@ -169,7 +221,7 @@ export default function transition(
                   .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
           }
 
-    // Update browser title based on current route
+    /** Update browser title based on the current route */
     const updateBrowserTitle = (toState, fromState, cb) => {
         const toStateIds = nameToIDs(toState.name)
         
@@ -215,6 +267,7 @@ export default function transition(
         }
     }
 
+    /** Handle middleware execution */
     const middleware = !middlewareFunctions.length
         ? []
         : (toState, fromState, cb) =>
@@ -227,6 +280,7 @@ export default function transition(
                   )
               )
 
+    // Build the execution pipeline in the correct order
     const pipeline = []
         .concat(canDeactivate)
         .concat(onExitRoute)
@@ -236,6 +290,7 @@ export default function transition(
         .concat(updateBrowserTitle)
         .concat(middleware)
 
+    // Execute the pipeline
     resolve(pipeline, asyncBase, done)
 
     return cancel

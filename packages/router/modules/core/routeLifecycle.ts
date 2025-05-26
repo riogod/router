@@ -1,7 +1,48 @@
 import { Router } from '../types/router'
 
+/** Utility function to convert values to factory functions */
 const toFunction = val => (typeof val === 'function' ? val : () => () => val)
 
+/**
+ * Enhances a router with route lifecycle management capabilities.
+ * 
+ * This module provides functionality for:
+ * - Route activation guards (canActivate)
+ * - Route deactivation guards (canDeactivate)
+ * - Route lifecycle hooks (onEnterRoute, onExitRoute, onRouteInActiveChain)
+ * - Browser title management
+ * - Factory and function storage for lifecycle handlers
+ * 
+ * Route guards control whether navigation can proceed:
+ * - canActivate: Called before entering a route
+ * - canDeactivate: Called before leaving a route
+ * 
+ * Lifecycle hooks provide notification points:
+ * - onEnterRoute: Called when entering a route
+ * - onExitRoute: Called when leaving a route
+ * - onRouteInActiveChain: Called for routes that remain active during navigation
+ * 
+ * @template Dependencies - Type of dependencies available to lifecycle handlers
+ * @param router - Router instance to enhance with lifecycle capabilities
+ * @returns Enhanced router with route lifecycle functionality
+ * 
+ * @example
+ * ```typescript
+ * // Route guard
+ * router.canActivate('admin', (router, deps) => (toState, fromState, done) => {
+ *   if (deps.auth.hasRole('admin')) {
+ *     done() // Allow navigation
+ *   } else {
+ *     done(new Error('Access denied')) // Block navigation
+ *   }
+ * })
+ * 
+ * // Lifecycle hook
+ * router.registerOnEnterRoute('user', (toState, fromState) => {
+ *   console.log(`Entering user route with ID: ${toState.params.id}`)
+ * })
+ * ```
+ */
 export default function withRouteLifecycle<Dependencies>(
     router: Router<Dependencies>
 ): Router<Dependencies> {
@@ -20,15 +61,29 @@ export default function withRouteLifecycle<Dependencies>(
     const browserTitleFactories = {}
     const browserTitleFunctions = {}
 
+    /**
+     * Get route guard factory functions for canDeactivate and canActivate.
+     * 
+     * @returns Tuple of [canDeactivateFactories, canActivateFactories]
+     */
     router.getLifecycleFactories = () => {
         return [canDeactivateFactories, canActivateFactories]
     }
 
+    /**
+     * Get instantiated route guard functions for canDeactivate and canActivate.
+     * 
+     * @returns Tuple of [canDeactivateFunctions, canActivateFunctions]
+     */
     router.getLifecycleFunctions = () => {
         return [canDeactivateFunctions, canActivateFunctions]
     }
 
-    // New methods to get route lifecycle hooks
+    /**
+     * Get route lifecycle hook factory functions.
+     * 
+     * @returns Object containing lifecycle hook factories
+     */
     router.getRouteLifecycleFactories = () => {
         return {
             onEnterRoute: onEnterRouteFactories,
@@ -37,6 +92,11 @@ export default function withRouteLifecycle<Dependencies>(
         }
     }
 
+    /**
+     * Get instantiated route lifecycle hook functions.
+     * 
+     * @returns Object containing lifecycle hook functions
+     */
     router.getRouteLifecycleFunctions = () => {
         return {
             onEnterRoute: onEnterRouteFunctions,
@@ -45,10 +105,40 @@ export default function withRouteLifecycle<Dependencies>(
         }
     }
 
+    /**
+     * Get browser title functions for all routes.
+     * 
+     * @returns Object mapping route names to title functions
+     */
     router.getBrowserTitleFunctions = () => {
         return browserTitleFunctions
     }
 
+    /**
+     * Register a deactivation guard for a specific route.
+     * 
+     * The guard is called before leaving the route and can prevent navigation
+     * by calling the done callback with an error.
+     * 
+     * @param name - Route name to guard
+     * @param canDeactivateHandler - Guard function or factory
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * router.canDeactivate('form', (router, deps) => (toState, fromState, done) => {
+     *   if (deps.form.hasUnsavedChanges()) {
+     *     if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
+     *       done()
+     *     } else {
+     *       done(new Error('Navigation cancelled'))
+     *     }
+     *   } else {
+     *     done()
+     *   }
+     * })
+     * ```
+     */
     router.canDeactivate = (name, canDeactivateHandler) => {
         const factory = toFunction(canDeactivateHandler)
 
@@ -58,6 +148,17 @@ export default function withRouteLifecycle<Dependencies>(
         return router
     }
 
+    /**
+     * Clear the deactivation guard for a specific route.
+     * 
+     * @param name - Route name to clear guard for
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * router.clearCanDeactivate('form')
+     * ```
+     */
     router.clearCanDeactivate = name => {
         canDeactivateFactories[name] = undefined
         canDeactivateFunctions[name] = undefined
@@ -65,6 +166,27 @@ export default function withRouteLifecycle<Dependencies>(
         return router
     }
 
+    /**
+     * Register an activation guard for a specific route.
+     * 
+     * The guard is called before entering the route and can prevent navigation
+     * by calling the done callback with an error.
+     * 
+     * @param name - Route name to guard
+     * @param canActivateHandler - Guard function or factory
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * router.canActivate('admin', (router, deps) => (toState, fromState, done) => {
+     *   if (deps.auth.isAuthenticated() && deps.auth.hasRole('admin')) {
+     *     done()
+     *   } else {
+     *     done({ redirect: { name: 'login' } })
+     *   }
+     * })
+     * ```
+     */
     router.canActivate = (name, canActivateHandler) => {
         const factory = toFunction(canActivateHandler)
 
@@ -74,25 +196,91 @@ export default function withRouteLifecycle<Dependencies>(
         return router
     }
 
-    // Internal methods to register route lifecycle hooks
+    /**
+     * Register an onEnterRoute lifecycle hook for a specific route.
+     * 
+     * This hook is called when entering the route, after guards have passed.
+     * 
+     * @param name - Route name
+     * @param handler - Lifecycle hook function
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * router.registerOnEnterRoute('user', (toState, fromState) => {
+     *   console.log(`Entering user ${toState.params.id}`)
+     * })
+     * ```
+     */
     router.registerOnEnterRoute = (name, handler) => {
         onEnterRouteFactories[name] = handler
         onEnterRouteFunctions[name] = handler
         return router
     }
 
+    /**
+     * Register an onExitRoute lifecycle hook for a specific route.
+     * 
+     * This hook is called when leaving the route, before guards are checked.
+     * 
+     * @param name - Route name
+     * @param handler - Lifecycle hook function
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * router.registerOnExitRoute('user', (toState, fromState) => {
+     *   console.log(`Leaving user ${fromState.params.id}`)
+     * })
+     * ```
+     */
     router.registerOnExitRoute = (name, handler) => {
         onExitRouteFactories[name] = handler
         onExitRouteFunctions[name] = handler
         return router
     }
 
+    /**
+     * Register an onRouteInActiveChain lifecycle hook for a specific route.
+     * 
+     * This hook is called for routes that remain active during navigation
+     * (parent routes when navigating between child routes).
+     * 
+     * @param name - Route name
+     * @param handler - Lifecycle hook function
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * router.registerOnRouteInActiveChain('app', (toState, fromState) => {
+     *   console.log('App route remains active during navigation')
+     * })
+     * ```
+     */
     router.registerOnRouteInActiveChain = (name, handler) => {
         onRouteInActiveChainFactories[name] = handler
         onRouteInActiveChainFunctions[name] = handler
         return router
     }
 
+    /**
+     * Register a browser title handler for a specific route.
+     * 
+     * The handler can be a string or function that returns the page title.
+     * 
+     * @param name - Route name
+     * @param handler - Title string or function that returns title
+     * @returns Router instance for chaining
+     * 
+     * @example
+     * ```typescript
+     * // Static title
+     * router.registerBrowserTitle('home', 'Home Page')
+     * 
+     * // Dynamic title
+     * router.registerBrowserTitle('user', (state) => `User: ${state.params.name}`)
+     * ```
+     */
     router.registerBrowserTitle = (name, handler) => {
         browserTitleFactories[name] = handler
         browserTitleFunctions[name] = handler
