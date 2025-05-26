@@ -1,5 +1,5 @@
 import createRouter from './createRouter'
-import { RouteNode } from 'route-node'
+import { RouteNode } from './lib/route-node'
 import transitionPath from '@riogz/router-transition-path'
 import { constants, errorCodes, ErrorCodes, Constants } from './constants'
 import cloneRouter from './clone'

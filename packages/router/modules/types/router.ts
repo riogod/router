@@ -5,7 +5,7 @@ import {
     RouteNode,
     RouteNodeState,
     URLParamsEncodingType
-} from 'route-node'
+} from '../lib/route-node'
 import {
     State,
     SimpleState,

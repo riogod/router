@@ -1,4 +1,4 @@
-import { RouteNode } from 'route-node'
+import { RouteNode } from '../lib/route-node'
 import { constants } from '../constants'
 import { Router, Route } from '../types/router'
 

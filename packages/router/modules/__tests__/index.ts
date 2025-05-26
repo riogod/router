@@ -1,5 +1,5 @@
 import createRouter from '../'
-import { RouteNode } from 'route-node'
+import { RouteNode } from '../lib/route-node'
 import { constants } from '../constants'
 import { createTestRouter } from './helpers'
 

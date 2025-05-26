@@ -33,7 +33,6 @@
     "access": "public"
   },
   "dependencies": {
-    "route-node": "4.1.1",
     "@riogz/router-transition-path": "^0.0.3",
     "symbol-observable": "4.0.0"
   },

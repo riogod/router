@@ -10,7 +10,7 @@ import withObservability from './core/observable'
 import withNavigation from './core/navigation'
 import withRouterLifecycle from './core/routerLifecycle'
 import withRouteLifecycle from './core/routeLifecycle'
-import { RouteNode } from 'route-node'
+import { RouteNode } from './lib/route-node'
 
 type Enhancer<Dependencies> = (
     router: Router<Dependencies>
