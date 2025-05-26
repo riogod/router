@@ -1,23 +1,58 @@
+/**
+ * @fileoverview RouteNode render prop component for selective route updates.
+ * Provides optimized route rendering that only updates when specific route nodes
+ * should be updated, improving performance for large route trees.
+ * 
+ * @module @riogz/react-router/render/RouteNode
+ */
+
 import React, { ReactNode, FunctionComponent, memo } from 'react'
 import { shouldUpdateNode } from '@riogz/router-transition-path'
 import { RouteContext } from '../types'
 import useRoute from '../hooks/useRoute'
 
+/**
+ * Props for the RouteNode component.
+ * 
+ * @interface RouteNodeProps
+ */
 export interface RouteNodeProps {
+    /** The route node name to monitor for changes */
     nodeName: string
+    /** Render prop function that receives route context */
     children: (routeContext: RouteContext) => ReactNode
 }
 
-// Props для внутреннего рендерера
+/**
+ * Internal props for the RouteNode renderer component.
+ * Combines RouteNodeProps with RouteContext for internal use.
+ * 
+ * @interface InternalRouteNodeRendererProps
+ * @private
+ */
 interface InternalRouteNodeRendererProps extends RouteNodeProps, RouteContext {}
 
-// Определяем рендер-функцию отдельно
+/**
+ * Internal render function for RouteNode content.
+ * Executes the children render prop with route context.
+ * 
+ * @param {InternalRouteNodeRendererProps} props - Component props
+ * @returns {React.ReactNode} Rendered content from children function
+ * @private
+ */
 const RouteNodeRenderFunction = (props: InternalRouteNodeRendererProps): React.ReactNode => {
     const { router, route, previousRoute, children } = props;
     return children({ router, route, previousRoute });
 };
 
-// Новый компонент-обертка, который гарантирует возврат React.ReactElement | null
+/**
+ * Typed wrapper component that ensures proper React element return type.
+ * Handles active/inactive state and wraps non-element content in fragments.
+ * 
+ * @param {InternalRouteNodeRendererProps} props - Component props
+ * @returns {React.ReactElement | null} Rendered element or null if inactive
+ * @private
+ */
 const TypedRouteNodeRenderer = (props: InternalRouteNodeRendererProps): React.ReactElement | null => {
     const { router, route, previousRoute, nodeName, children } = props;
 
@@ -43,7 +78,12 @@ const TypedRouteNodeRenderer = (props: InternalRouteNodeRendererProps): React.Re
     return <>{contentToRender}</>;
 };
 
-// Мемоизируем новый компонент-обертку
+/**
+ * Memoized internal renderer component with optimized update logic.
+ * Only re-renders when necessary based on route node changes.
+ * 
+ * @private
+ */
 const InternalRouteNodeRenderer = memo(TypedRouteNodeRenderer, (prevProps, nextProps) => {
     // 1. Проверяем базовые изменения, не связанные с роутом
     if (prevProps.children !== nextProps.children || prevProps.nodeName !== nextProps.nodeName) {
