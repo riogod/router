@@ -1,7 +1,8 @@
 {
   "git": {
     "commitMessage": "chore(release): release ${version}",
-    "tagName": "v${version}"
+    "tagName": "v${version}",
+    "requireCleanWorkingDir": false
   },
   "npm": {
     "publish": false,
@@ -18,9 +19,6 @@
     }
   },
   "hooks": {
-    "before:init": [
-      "npm run build"
-    ],
     "before:bump": ["node ./scripts/update-package-versions.js ${version}"],
     "after:bump": ["node ./scripts/publish-packages.js"]
   }
