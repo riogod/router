@@ -1,7 +1,7 @@
 name: Deploy
 
 on:
-  # Деплой при push в master (после мержа PR)
+  # Деплой при push в master (но только если это merge из release ветки)
   push:
     branches:
       - master
@@ -21,7 +21,7 @@ on:
           - prerelease
 
 jobs:
-  # Проверяем что все тесты прошли
+  # Проверяем является ли это мержем из release ветки
   verify:
     runs-on: ubuntu-latest
     outputs:
@@ -43,36 +43,34 @@ jobs:
           IS_RELEASE_MERGE="false"
           TARGET_VERSION=""
           
-          # Проверяем паттерн merge commit из release ветки
-          if echo "$MERGE_COMMIT_MSG" | grep -qE "Merge pull request .* from .*/release/v[0-9]+\.[0-9]+\.[0-9]+"; then
+          # Проверяем паттерн merge commit из release ветки (включая суффиксы)
+          if echo "$MERGE_COMMIT_MSG" | grep -qE "Merge pull request .* from .*/release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?"; then
             IS_RELEASE_MERGE="true"
-            # Извлекаем версию из commit message
-            TARGET_VERSION=$(echo "$MERGE_COMMIT_MSG" | grep -oE "release/v[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-\.]*" | sed 's/release\/v//')
+            # Извлекаем версию из commit message (включая суффиксы типа -beta.1, -alpha)
+            TARGET_VERSION=$(echo "$MERGE_COMMIT_MSG" | grep -oE "release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?" | sed 's/release\/v//')
             echo "Detected release merge with target version: $TARGET_VERSION"
-          elif echo "$MERGE_COMMIT_MSG" | grep -qE "Merge branch 'release/v[0-9]+\.[0-9]+\.[0-9]+"; then
+          elif echo "$MERGE_COMMIT_MSG" | grep -qE "Merge branch 'release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?"; then
             IS_RELEASE_MERGE="true"
-            TARGET_VERSION=$(echo "$MERGE_COMMIT_MSG" | grep -oE "release/v[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-\.]*" | sed 's/release\/v//')
+            TARGET_VERSION=$(echo "$MERGE_COMMIT_MSG" | grep -oE "release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?" | sed 's/release\/v//')
             echo "Detected direct release branch merge with target version: $TARGET_VERSION"
           fi
+          
+          echo "Merge commit message: $MERGE_COMMIT_MSG"
+          echo "Is release merge: $IS_RELEASE_MERGE"
+          echo "Target version: $TARGET_VERSION"
           
           echo "is_release_merge=$IS_RELEASE_MERGE" >> $GITHUB_OUTPUT
           echo "target_version=$TARGET_VERSION" >> $GITHUB_OUTPUT
           
-          # Проверяем есть ли изменения в packages с последнего тега
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
-          if [ -z "$LAST_TAG" ]; then
-            echo "No previous tags found, deploying"
+          # Деплой запускается ТОЛЬКО при мерже из release ветки
+          if [ "$IS_RELEASE_MERGE" = "true" ]; then
+            echo "Release merge detected - deployment will proceed"
             echo "should_deploy=true" >> $GITHUB_OUTPUT
           else
-            CHANGES=$(git diff --name-only $LAST_TAG..HEAD | grep -E '^packages/' || true)
-            if [ -n "$CHANGES" ]; then
-              echo "Package changes detected since $LAST_TAG"
-              echo "should_deploy=true" >> $GITHUB_OUTPUT
-            else
-              echo "No package changes since $LAST_TAG"
-              echo "should_deploy=false" >> $GITHUB_OUTPUT
-            fi
+            echo "Not a release merge - skipping deployment"
+            echo "Regular commits to master should not trigger deployment"
+            echo "Only merges from release/vX.Y.Z branches trigger deployment"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
 
   # Запускаем тесты перед деплоем

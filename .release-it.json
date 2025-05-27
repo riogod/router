@@ -21,6 +21,7 @@
     "before:init": [
       "npm run build"
     ],
-    "before:bump": ["node ./scripts/update-package-versions.js ${version}"]
+    "before:bump": ["node ./scripts/update-package-versions.js ${version}"],
+    "after:bump": ["node ./scripts/publish-packages.js"]
   }
 } 
