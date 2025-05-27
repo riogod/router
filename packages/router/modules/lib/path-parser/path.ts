@@ -191,8 +191,8 @@ import {
   
       if (unexpectedQueryParams.length === 0) {
         // Extend url match
-        Object.keys(queryParams).forEach(
-          // @ts-ignore
+        Object.keys(queryParams)        .forEach(
+          // @ts-ignore: Dynamic property assignment needed for query params
           p => (match[p] = (queryParams as any)[p])
         )
   

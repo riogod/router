@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "moduleResolution": "node",
+    "module": "esnext",
+    "jsx": "react-jsx",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@riogz/router": ["packages/router/modules"],
+      "@riogz/react-router": ["packages/react-router/modules"],
+      "@riogz/router-helpers": ["packages/router-helpers/modules"],
+      "@riogz/router-plugin-browser": ["packages/router-plugin-browser/modules"],
+      "@riogz/router-plugin-logger": ["packages/router-plugin-logger/modules"],
+      "@riogz/router-plugin-persistent-params": ["packages/router-plugin-persistent-params/modules"],
+      "@riogz/router-transition-path": ["packages/router-transition-path/modules"]
+    },
+    "lib": [
+      "es2015",
+      "es2015.promise",
+      "es2015.symbol",
+      "es2015.symbol.wellknown",
+      "dom"
+    ]
+  },
+  "include": [
+    "packages/*/modules/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "examples",
+    "packages/*/dist",
+    "packages/*/lib",
+    "coverage",
+    "packages/*/modules/__tests__"
+  ]
+} 

@@ -14,7 +14,7 @@ import { BrowserPluginOptions } from './types'
  * Extends the Router interface with browser-specific methods.
  * These methods are added to the router instance when the browser plugin is used.
  */
-declare module '@riogz/router/dist/types/router' {
+declare module '@riogz/router' {
     interface Router {
         /**
          * Build a complete URL for a route with parameters.

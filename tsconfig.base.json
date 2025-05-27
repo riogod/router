@@ -2,11 +2,14 @@
   "compilerOptions": {
     "target": "es2017",
     "moduleResolution": "node",
+    "module": "esnext",
     "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
     "lib": [
       "es2015",
       "es2015.promise",
@@ -19,6 +22,7 @@
     "node_modules",
     "examples",
     "packages/*/dist",
-    "packages/*/lib"
+    "packages/*/lib",
+    "coverage"
   ]
 }

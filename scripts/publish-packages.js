@@ -1,34 +1,40 @@
+const { execSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const { execSync } = require('node:child_process');
 const { globSync } = require('glob');
 
-console.log('Starting publication of packages...');
+console.log('🚀 Publishing packages to npm...');
 
 const packageFiles = globSync('packages/*/package.json', { absolute: true });
 
 packageFiles.forEach(filePath => {
-  const packageJsonPath = path.resolve(filePath);
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  const packageName = packageJson.name;
   const packageDir = path.dirname(filePath);
-
-  if (packageJson.private) {
-    console.log(`Skipping private package: ${packageName}`);
-    return;
-  }
-
-  console.log(`Publishing ${packageName} from ${packageDir}...`);
+  const packageJson = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  
+  console.log(`\n📦 Publishing ${packageJson.name}@${packageJson.version}...`);
+  
   try {
-    // NPM_TOKEN должен быть установлен в окружении CI
-    // Флаг --access public берется из publishConfig в package.json каждого пакета
-    // Если его там нет, npm cli может потребовать этот флаг для скоуп-пакетов
-    execSync('npm publish', { cwd: packageDir, stdio: 'inherit' });
-    console.log(`Successfully published ${packageName}`);
+    // Переходим в директорию пакета и публикуем
+    process.chdir(packageDir);
+    
+    // Проверяем наличие NPM_TOKEN в CI окружении
+    if (process.env.CI && !process.env.NODE_AUTH_TOKEN && !process.env.NPM_TOKEN) {
+      console.warn('⚠️  Warning: No NPM_TOKEN or NODE_AUTH_TOKEN found in CI environment');
+    }
+    
+    execSync('npm publish --access public', { 
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        // NODE_AUTH_TOKEN имеет приоритет в GitHub Actions
+        NPM_TOKEN: process.env.NODE_AUTH_TOKEN || process.env.NPM_TOKEN
+      }
+    });
+    console.log(`✅ Successfully published ${packageJson.name}@${packageJson.version}`);
   } catch (error) {
-    console.error(`Failed to publish ${packageName}:`, error.message);
-    // Можно добавить process.exit(1) если нужно прервать при ошибке публикации одного пакета
+    console.error(`❌ Failed to publish ${packageJson.name}:`, error.message);
+    process.exit(1);
   }
 });
 
-console.log('All specified packages have been processed for publishing.'); 
+console.log('\n🎉 All packages published successfully!'); 

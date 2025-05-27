@@ -11,7 +11,8 @@
     "lint:fix": "eslint packages/*/modules --ext ts,tsx --fix",
     "format": "prettier 'packages/**/*.{js,ts,json}'",
     "format:check": "prettier --check 'packages/**/*.{js,ts,json}'",
-    "type-check": "tsc --noEmit --project tsconfig.base.json",
+    "type-check": "tsc --noEmit --project tsconfig.typecheck.json",
+    "check-compatibility": "node scripts/check-node-compatibility.js",
     "release": "release-it",
     "audit:security": "npm audit --audit-level=high",
     "audit:ci": "npx audit-ci --config .audit-ci.json"
