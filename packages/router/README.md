@@ -202,3 +202,7 @@ MIT © [Vyacheslav Krasnyanskiy](https://github.com/riogod)
 - [Contributing Guide](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 // Trigger CI tests
+
+## Release v0.0.7 Test
+
+This is a test change for release v0.0.7 to verify the deploy workflow works correctly with proper merge commits.
