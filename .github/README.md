@@ -7,8 +7,8 @@
 ### 1. **CI Workflow** (`.github/workflows/ci.yml`)
 
 **Триггеры:**
-- Pull requests в `master` и `release-*.*.*` ветки
-- Push в `master` и `release-*.*.*` ветки
+- Pull requests в `master` и `release/v*` ветки
+- Push в `master`
 - Ручной запуск
 
 **Что делает:**
@@ -19,6 +19,7 @@
 - 📊 Генерирует coverage отчеты (только для PR)
 - 🧪 Тестирует примеры
 - 💬 Комментирует PR при ошибках
+- ✅ Работает одинаково для PR в master и release ветки
 
 ### 2. **Deploy Workflow** (`.github/workflows/deploy.yml`)
 
@@ -43,18 +44,7 @@
 **Что делает:**
 - 📦 Публикует пакеты в npm при создании тега
 
-### 4. **Release Branch Workflow** (`.github/workflows/release-branch.yml`)
 
-**Триггеры:**
-- Pull requests из веток `release/vX.Y.Z` в `master`
-
-**Что делает:**
-- ✅ Валидирует формат имени release ветки
-- 🧪 Запускает полные тесты для release
-- 🏗️ Проверяет сборку
-- 📋 Проверяет консистентность версий
-- 💬 Добавляет информативный комментарий в PR
-- 🚦 Определяет готовность к релизу
 
 
 
@@ -76,6 +66,7 @@
 - Фичевые ветки для разработки
 - Могут создавать PR в `master` или `release/vX.Y.Z`
 - Тесты запускаются при создании/обновлении PR
+- При PR в release ветку проходят те же проверки, что и для master
 
 ## 🚀 Процесс релиза
 
@@ -137,43 +128,6 @@ feat!: breaking change in API        # major version bump
 docs: update README                   # no version bump
 ```
 
-## 📋 Примеры использования Release веток
-
-### Создание release ветки для патча
-```bash
-# Создаем ветку для версии 1.0.1
-git checkout -b release/v1.0.1
-git push -u origin release/v1.0.1
-
-# Добавляем исправления
-git commit -m "fix: resolve critical bug"
-
-# Создаем PR в master
-# После мержа версия автоматически станет 1.0.1
-```
-
-### Создание beta релиза
-```bash
-# Создаем ветку для beta версии
-git checkout -b release/v2.0.0-beta.1
-git push -u origin release/v2.0.0-beta.1
-
-# Добавляем новые фичи
-git commit -m "feat: add experimental feature"
-
-# Создаем PR в master
-# После мержа версия станет 2.0.0-beta.1
-```
-
-### Создание alpha релиза
-```bash
-# Создаем ветку для alpha версии
-git checkout -b release/v2.1.0-alpha.2
-git push -u origin release/v2.1.0-alpha.2
-
-# Создаем PR в master
-# Система автоматически установит версию 2.1.0-alpha.2
-```
 
 ## 📊 Статусы и badges
 
@@ -183,4 +137,59 @@ git push -u origin release/v2.1.0-alpha.2
 [![CI](https://github.com/riogod/router/actions/workflows/ci.yml/badge.svg)](https://github.com/riogod/router/actions/workflows/ci.yml)
 [![Deploy](https://github.com/riogod/router/actions/workflows/deploy.yml/badge.svg)](https://github.com/riogod/router/actions/workflows/deploy.yml)
 [![codecov](https://codecov.io/gh/riogod/router/branch/master/graph/badge.svg)](https://codecov.io/gh/riogod/router)
+```
+
+## 📋 Примеры использования Release веток
+
+### Создание release ветки для патча
+```bash
+# Создаем ветку для версии 1.0.1
+git checkout -b release/v1.0.1
+git push -u origin release/v1.0.1
+
+# Добавляем исправления
+git add .
+git commit -m "fix: resolve critical bug"
+git push
+
+# Создаем PR в master
+gh pr create --title "Release v1.0.1" --body "Bug fixes for v1.0.1"
+```
+
+### Работа с feature ветками в release
+```bash
+# Создаем release ветку
+git checkout -b release/v1.2.0
+git push -u origin release/v1.2.0
+
+# Создаем feature ветку от release
+git checkout -b feature/new-api release/v1.2.0
+git push -u origin feature/new-api
+
+# Разрабатываем фичу
+git add .
+git commit -m "feat: implement new API endpoint"
+git push
+
+# Создаем PR в release ветку (не в master!)
+gh pr create --base release/v1.2.0 --title "Add new API" --body "New API for v1.2.0"
+
+# После мержа feature в release, создаем PR release в master
+git checkout release/v1.2.0
+gh pr create --title "Release v1.2.0" --body "New release with API improvements"
+```
+
+### Создание pre-release ветки
+```bash
+# Создаем ветку для бета версии
+git checkout -b release/v2.0.0-beta.1
+git push -u origin release/v2.0.0-beta.1
+
+# Добавляем экспериментальные фичи
+git add .
+git commit -m "feat!: breaking changes for v2"
+git push
+
+# Создаем PR в master
+gh pr create --title "Release v2.0.0-beta.1" --body "Beta release with breaking changes"
 ``` 

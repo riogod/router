@@ -1,10 +1,11 @@
 name: CI
 
 on:
-  # Pull requests в master (кроме release веток, у них свой workflow)
+  # Pull requests в master и release ветки
   pull_request:
     branches: 
       - master
+      - 'release/v*'
   
   # Push в master (release ветки обрабатываются отдельно)
   push:
@@ -44,7 +45,7 @@ jobs:
   # Основные тесты
   test:
     needs: changes
-    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    if: needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     
     strategy:
@@ -80,7 +81,7 @@ jobs:
   # Проверка сборки
   build:
     needs: changes
-    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    if: needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     
     steps:
@@ -111,7 +112,7 @@ jobs:
   # Проверка безопасности
   security:
     needs: changes
-    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    if: needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     
     steps:
@@ -135,10 +136,10 @@ jobs:
         run: npx audit-ci --config .audit-ci.json
         continue-on-error: true
 
-  # Проверка coverage (только для PR, кроме release веток)
+  # Проверка coverage (только для PR)
   coverage:
     needs: changes
-    if: github.event_name == 'pull_request' && needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    if: github.event_name == 'pull_request' && needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     
     steps:
@@ -167,7 +168,7 @@ jobs:
   # Проверка совместимости с примерами
   examples:
     needs: [changes, build]
-    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    if: needs.changes.outputs.packages == 'true'
     runs-on: ubuntu-latest
     
     steps:
