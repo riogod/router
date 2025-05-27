@@ -5,9 +5,16 @@
   "scripts": {
     "build": "rollup -c rollup.config.js && node ./scripts/copy-readme.js",
     "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
     "lint": "eslint packages/*/modules --ext ts,tsx",
+    "lint:fix": "eslint packages/*/modules --ext ts,tsx --fix",
     "format": "prettier 'packages/**/*.{js,ts,json}'",
-    "release": "release-it"
+    "format:check": "prettier --check 'packages/**/*.{js,ts,json}'",
+    "type-check": "tsc --noEmit --project tsconfig.base.json",
+    "release": "release-it",
+    "audit:security": "npm audit --audit-level=high",
+    "audit:ci": "npx audit-ci --config .audit-ci.json"
   },
   "lint-staged": {
     "packages/**/*.{js,ts}": [
@@ -37,6 +44,7 @@
   "homepage": "https://github.com/riogod/router",
   "devDependencies": {
     "@release-it/conventional-changelog": "^10.0.1",
+    "audit-ci": "^7.1.0",
     "@rollup/plugin-commonjs": "^26.0.3",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",

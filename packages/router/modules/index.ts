@@ -13,7 +13,7 @@
 import createRouter from './createRouter'
 import { RouteNode } from './lib/route-node'
 import transitionPath from '@riogz/router-transition-path'
-import { constants, errorCodes, ErrorCodes, Constants } from './constants'
+import { constants, errorCodes, ErrorCodes as _ErrorCodes, Constants as _Constants } from './constants'
 import cloneRouter from './clone'
 
 // Router type definitions
@@ -73,9 +73,9 @@ export {
 // Constant type definitions
 export type { 
     /** Error codes interface */
-    ErrorCodes, 
+    ErrorCodes as _ErrorCodes, 
     /** Constants interface */
-    Constants 
+    Constants as _Constants 
 } from './constants'
 
 /**

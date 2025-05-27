@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - 'v*.*.*' # Запускать при пуше тегов вида v1.0.0, v1.2.3 и т.д.
+  
+  # Возможность запуска вручную
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish'
+        required: true
+        type: string
 
 jobs:
   publish-npm:

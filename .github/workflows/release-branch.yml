@@ -1,0 +1,186 @@
+name: Release Branch
+
+on:
+  # Pull requests из release веток
+  pull_request:
+    branches: 
+      - master
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # Проверяем что это валидная release ветка
+  validate-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'release/v')
+    outputs:
+      is_valid_release: ${{ steps.validate.outputs.is_valid_release }}
+      target_version: ${{ steps.validate.outputs.target_version }}
+      
+    steps:
+      - name: Validate release branch name
+        id: validate
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "Checking release branch: $BRANCH_NAME"
+          
+          # Проверяем формат release/vX.Y.Z или release/vX.Y.Z-suffix
+          if echo "$BRANCH_NAME" | grep -qE "^release/v[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9\-\.]+)?$"; then
+            TARGET_VERSION=$(echo "$BRANCH_NAME" | sed 's/release\/v//')
+            echo "Valid release branch detected with version: $TARGET_VERSION"
+            echo "is_valid_release=true" >> $GITHUB_OUTPUT
+            echo "target_version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "Invalid release branch format. Expected: release/vX.Y.Z or release/vX.Y.Z-suffix"
+            echo "is_valid_release=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # Запускаем тесты для release ветки
+  test-release:
+    needs: validate-release
+    if: needs.validate-release.outputs.is_valid_release == 'true'
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+        
+    name: Test Release (Node ${{ matrix.node-version }})
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Run linting (Node 18 only)
+        if: matrix.node-version == '18.x'
+        run: npm run lint
+        
+      - name: Check TypeScript compilation
+        if: matrix.node-version == '18.x'
+        run: npx tsc --noEmit --project tsconfig.base.json
+
+  # Проверка сборки для release
+  build-release:
+    needs: validate-release
+    if: needs.validate-release.outputs.is_valid_release == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build packages
+        run: npm run build
+
+  # Проверка версии в package.json
+  version-check:
+    needs: validate-release
+    if: needs.validate-release.outputs.is_valid_release == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Check version consistency
+        run: |
+          BRANCH_VERSION="${{ needs.validate-release.outputs.target_version }}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          
+          echo "Branch version: $BRANCH_VERSION"
+          echo "Package.json version: $PACKAGE_VERSION"
+          
+          # Предупреждение если версии не совпадают (не критично)
+          if [ "$BRANCH_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "⚠️ Warning: Branch version ($BRANCH_VERSION) differs from package.json version ($PACKAGE_VERSION)"
+            echo "The version will be automatically set to $BRANCH_VERSION when merged to master"
+          else
+            echo "✅ Version consistency check passed"
+          fi
+
+  # Комментарий в PR с информацией о релизе
+  pr-comment:
+    needs: [validate-release, test-release, build-release, version-check]
+    if: always() && needs.validate-release.outputs.is_valid_release == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const targetVersion = '${{ needs.validate-release.outputs.target_version }}';
+            const testStatus = '${{ needs.test-release.result }}';
+            const buildStatus = '${{ needs.build-release.result }}';
+            
+            const statusIcon = (status) => {
+              switch(status) {
+                case 'success': return '✅';
+                case 'failure': return '❌';
+                case 'cancelled': return '⏹️';
+                default: return '⏳';
+              }
+            };
+            
+            const body = `## 🚀 Release Branch: v${targetVersion}
+            
+            Этот PR подготавливает релиз версии **${targetVersion}**.
+            
+            ### Статус проверок:
+            - ${statusIcon(testStatus)} Тесты: ${testStatus}
+            - ${statusIcon(buildStatus)} Сборка: ${buildStatus}
+            
+            ### Что произойдет при мерже:
+            1. Версия всех пакетов будет автоматически установлена в **${targetVersion}**
+            2. Будет создан тег **v${targetVersion}**
+            3. Пакеты будут опубликованы в npm
+            4. Будет создан GitHub Release
+            
+            ${testStatus === 'success' && buildStatus === 'success' 
+              ? '✅ **Готов к мержу!** Все проверки прошли успешно.' 
+              : '⚠️ **Не готов к мержу.** Исправьте ошибки перед мержем.'}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  # Итоговая проверка для release
+  release-ready:
+    needs: [validate-release, test-release, build-release, version-check]
+    if: always() && needs.validate-release.outputs.is_valid_release == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check release readiness
+        run: |
+          if [[ "${{ needs.test-release.result }}" == "success" && "${{ needs.build-release.result }}" == "success" ]]; then
+            echo "🚀 Release v${{ needs.validate-release.outputs.target_version }} is ready for deployment!"
+            exit 0
+          else
+            echo "❌ Release is not ready. Fix the issues before merging."
+            exit 1
+          fi 

@@ -1,0 +1,228 @@
+name: CI
+
+on:
+  # Pull requests в master (кроме release веток, у них свой workflow)
+  pull_request:
+    branches: 
+      - master
+  
+  # Push в master (release ветки обрабатываются отдельно)
+  push:
+    branches: 
+      - master
+
+  # Возможность запуска вручную
+  workflow_dispatch:
+
+jobs:
+  # Определяем какие файлы изменились
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.changes.outputs.packages }}
+      docs: ${{ steps.changes.outputs.docs }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            packages:
+              - 'packages/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'jest.config.js'
+              - 'tsconfig.base.json'
+              - 'rollup.config.js'
+            docs:
+              - '**/*.md'
+              - 'examples/**'
+
+  # Основные тесты
+  test:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+        
+    name: Test (Node ${{ matrix.node-version }})
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Run linting (Node 18 only)
+        if: matrix.node-version == '18.x'
+        run: npm run lint
+        
+      - name: Check TypeScript compilation
+        if: matrix.node-version == '18.x'
+        run: npx tsc --noEmit --project tsconfig.base.json
+
+  # Проверка сборки
+  build:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build packages
+        run: npm run build
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            packages/*/dist/
+            packages/*/lib/
+          retention-days: 7
+
+  # Проверка безопасности
+  security:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+        
+      - name: Check for known vulnerabilities
+        run: npx audit-ci --config .audit-ci.json
+        continue-on-error: true
+
+  # Проверка coverage (только для PR, кроме release веток)
+  coverage:
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests with coverage
+        run: npm test -- --coverage --coverageReporters=lcov
+        
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # Проверка совместимости с примерами
+  examples:
+    needs: [changes, build]
+    if: needs.changes.outputs.packages == 'true' && !startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          
+      - name: Test examples
+        run: |
+          cd examples/react-router-demo
+          npm install
+          npm run build
+
+  # Итоговая проверка
+  ci-success:
+    needs: [test, build, security, examples]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.security.result }}" == "failure" || "${{ needs.examples.result }}" == "failure" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All jobs passed successfully"
+
+  # Уведомления (опционально)
+  notify:
+    needs: [ci-success]
+    if: failure() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ CI checks failed. Please review the errors and fix them before merging.'
+            }) 

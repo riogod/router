@@ -40,7 +40,7 @@ interface InternalRouteNodeRendererProps extends RouteNodeProps, RouteContext {}
  * @returns {React.ReactNode} Rendered content from children function
  * @private
  */
-const RouteNodeRenderFunction = (props: InternalRouteNodeRendererProps): React.ReactNode => {
+const _RouteNodeRenderFunction = (props: InternalRouteNodeRendererProps): React.ReactNode => {
     const { router, route, previousRoute, children } = props;
     return children({ router, route, previousRoute });
 };

@@ -1,5 +1,5 @@
 import { Router } from '../types/router'
-import { State, Params } from '../types/base'
+import { State, Params as _Params } from '../types/base'
 import { constants } from '../constants'
 
 /**

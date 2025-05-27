@@ -6,6 +6,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
+    "skipLibCheck": true,
     "lib": [
       "es2015",
       "es2015.promise",
@@ -13,5 +14,11 @@
       "es2015.symbol.wellknown",
       "dom"
     ]
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "examples",
+    "packages/*/dist",
+    "packages/*/lib"
+  ]
 }

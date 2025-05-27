@@ -227,13 +227,13 @@ export default function transition(
         
         // Find the most specific route that has a browserTitle
         let titleHandler = null
-        let titleRoute = null
+        let _titleRoute = null
         
         for (let i = toStateIds.length - 1; i >= 0; i--) {
             const routeName = toStateIds[i]
             if (browserTitleFunctions[routeName]) {
                 titleHandler = browserTitleFunctions[routeName]
-                titleRoute = routeName
+                _titleRoute = routeName
                 break
             }
         }

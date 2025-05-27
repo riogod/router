@@ -1,4 +1,6 @@
 [![npm version](https://badge.fury.io/js/@riogz%2Frouter.svg)](https://badge.fury.io/js/@riogz%2Frouter)
+[![CI](https://github.com/riogod/router/actions/workflows/ci.yml/badge.svg)](https://github.com/riogod/router/actions/workflows/ci.yml)
+[![Deploy](https://github.com/riogod/router/actions/workflows/deploy.yml/badge.svg)](https://github.com/riogod/router/actions/workflows/deploy.yml)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![gzip](https://deno.bundlejs.com/badge?q=@riogz/router@latest&treeshake=[*])
 
 # @riogz/router
