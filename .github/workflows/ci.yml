@@ -37,7 +37,9 @@ jobs:
               - 'package-lock.json'
               - 'jest.config.js'
               - 'tsconfig.base.json'
+              - 'tsconfig.typecheck.json'
               - 'rollup.config.js'
+              - 'scripts/check-node-compatibility.js'
             docs:
               - '**/*.md'
               - 'examples/**'
@@ -50,7 +52,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x]
+        node-version: [16.x, 18.x, 20.x, 22.x]
         
     name: Test (Node ${{ matrix.node-version }})
     
@@ -67,16 +69,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+      - name: Debug Node version
+        run: |
+          echo "Matrix node-version: ${{ matrix.node-version }}"
+          echo "Actual Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "TypeScript version: $(npx tsc --version)"
+          echo "Working directory: $(pwd)"
+          echo "Available TypeScript configs:"
+          ls -la tsconfig*.json || echo "No tsconfig files found"
+        
       - name: Run tests
         run: npm test
         
-      - name: Run linting (Node 18 only)
-        if: matrix.node-version == '18.x'
+      - name: Run linting
         run: npm run lint
         
       - name: Check TypeScript compilation
-        if: matrix.node-version == '18.x'
-        run: npx tsc --noEmit --project tsconfig.base.json
+        run: npm run check-compatibility
 
   # Проверка сборки
   build:
