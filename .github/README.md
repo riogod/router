@@ -17,7 +17,6 @@
 - 🏗️ Собирает пакеты
 - 🛡️ Проверяет безопасность (npm audit)
 - 📊 Генерирует coverage отчеты (только для PR)
-- 🧪 Тестирует примеры
 - 💬 Комментирует PR при ошибках
 - ✅ Работает одинаково для PR в master и release ветки
 
@@ -110,6 +109,11 @@
   - `security`
 - ✅ Require pull request reviews before merging
 - ✅ Dismiss stale PR approvals when new commits are pushed
+
+### Workflow Permissions
+Убедитесь, что в Settings → Actions → General:
+- ✅ Workflow permissions: "Read and write permissions"
+- ✅ Allow GitHub Actions to create and approve pull requests: включено
 
 ## 🔐 Секреты
 

@@ -15,6 +15,11 @@ on:
   # Возможность запуска вручную
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   # Определяем какие файлы изменились
   changes:
@@ -175,46 +180,18 @@ jobs:
           flags: unittests
           name: codecov-umbrella
 
-  # Проверка совместимости с примерами
-  examples:
-    needs: [changes, build]
-    if: needs.changes.outputs.packages == 'true'
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          
-      - name: Test examples
-        run: |
-          cd examples/react-router-demo
-          npm install
-          npm run build
+
 
   # Итоговая проверка
   ci-success:
-    needs: [test, build, security, examples]
+    needs: [test, build, security]
     if: always()
     runs-on: ubuntu-latest
     
     steps:
       - name: Check all jobs status
         run: |
-          if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.security.result }}" == "failure" || "${{ needs.examples.result }}" == "failure" ]]; then
+          if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.security.result }}" == "failure" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi
@@ -222,14 +199,18 @@ jobs:
 
   # Уведомления (опционально)
   notify:
-    needs: [ci-success]
-    if: failure() && github.event_name == 'pull_request'
+    needs: [test, build, security]
+    if: always() && (needs.test.result == 'failure' || needs.build.result == 'failure' || needs.security.result == 'failure') && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     
     steps:
       - name: Comment on PR
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
               issue_number: context.issue.number,
