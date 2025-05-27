@@ -206,3 +206,7 @@ MIT © [Vyacheslav Krasnyanskiy](https://github.com/riogod)
 ## Release v0.0.7 Test
 
 This is a test change for release v0.0.7 to verify the deploy workflow works correctly with proper merge commits.
+
+## Release v0.0.8 Test
+
+This is a test change for release v0.0.8 to verify the deploy workflow works correctly with modern GitHub Release action.
