@@ -7,6 +7,8 @@ test_messages=(
   "Merge pull request #123 from riogod/release/v0.0.5"
   "Merge pull request #124 from user/release/v1.2.3-beta.1"
   "Merge branch 'release/v2.0.0'"
+  "Release v.0.0.5 (#3)"
+  "Release v1.2.3-beta.1 (#4)"
   "Merge pull request #125 from riogod/feature/new-feature"
   "Merge pull request #126 from riogod/fix/bug-fix"
   "feat: add new feature"
@@ -35,6 +37,11 @@ for msg in "${test_messages[@]}"; do
     IS_RELEASE_MERGE="true"
     TARGET_VERSION=$(echo "$msg" | grep -oE "release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?" | sed 's/release\/v//')
     echo "✅ Detected direct release branch merge with target version: $TARGET_VERSION"
+  elif echo "$msg" | grep -qE "Release v\.?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)? \(#[0-9]+\)"; then
+    IS_RELEASE_MERGE="true"
+    # Извлекаем версию из commit message типа "Release v.0.0.5 (#3)"
+    TARGET_VERSION=$(echo "$msg" | grep -oE "v\.?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?" | sed 's/v\.*//')
+    echo "✅ Detected release commit with target version: $TARGET_VERSION"
   else
     echo "❌ Not a release merge - deployment would be skipped"
   fi
