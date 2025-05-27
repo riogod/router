@@ -34,7 +34,19 @@
 - 🚀 Публикует в npm
 - 📝 Создает GitHub Release
 
-### 3. **Publish Workflow** (`.github/workflows/publish.yml`)
+### 3. **CodeQL Workflow** (`.github/workflows/codeql.yml`)
+
+**Триггеры:**
+- Pull requests в `master`
+- Push в `master`
+- Еженедельно по расписанию (понедельник)
+
+**Что делает:**
+- 🔍 Сканирует код на уязвимости безопасности
+- 📊 Анализирует JavaScript/TypeScript код
+- 🛡️ Создает отчеты о безопасности в GitHub Security
+
+### 4. **Publish Workflow** (`.github/workflows/publish.yml`)
 
 **Триггеры:**
 - Push тегов `v*.*.*`
@@ -107,6 +119,7 @@
   - `Test (Node 22.x)`
   - `build`
   - `security`
+  - `Analyze (javascript-typescript)`
 - ✅ Require pull request reviews before merging
 - ✅ Dismiss stale PR approvals when new commits are pushed
 
