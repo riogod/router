@@ -262,9 +262,18 @@ class ChangelogGenerator {
     console.log(`📋 Generating changelog for version ${version}...`);
     
     const changelog = this.generateChangelog(version);
-    this.updateChangelogFile(changelog);
     
-    console.log(`✅ Changelog updated in ${this.options.outputFile}`);
+    // Only update file if outputFile is specified and not a temp file
+    if (this.options.outputFile && !this.options.outputFile.startsWith('/tmp/')) {
+      this.updateChangelogFile(changelog);
+      console.log(`✅ Changelog updated in ${this.options.outputFile}`);
+    } else if (this.options.outputFile && this.options.outputFile.startsWith('/tmp/')) {
+      // Write to temp file for CI usage
+      const fs = require('fs');
+      fs.writeFileSync(this.options.outputFile, changelog);
+      console.log(`✅ Changelog written to ${this.options.outputFile}`);
+    }
+    
     return changelog;
   }
 }
@@ -273,20 +282,44 @@ class ChangelogGenerator {
 if (require.main === module) {
   const args = process.argv.slice(2);
   const version = args[0];
-  const fromTag = args[1];
+  let fromTag = args[1];
+  let outputFile = 'CHANGELOG.md';
+  let toTag = 'HEAD';
+  let includeAll = process.env.INCLUDE_ALL === 'true';
+
+  // Parse additional arguments
+  for (let i = 2; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith('--output=')) {
+      outputFile = arg.split('=')[1];
+    } else if (arg.startsWith('--to-tag=')) {
+      toTag = arg.split('=')[1];
+    } else if (arg === '--include-all') {
+      includeAll = true;
+    } else if (!fromTag && !arg.startsWith('--')) {
+      fromTag = arg;
+    }
+  }
 
   if (!version) {
-    console.error('Usage: node generate-changelog.js <version> [fromTag]');
+    console.error('Usage: node generate-changelog.js <version> [fromTag] [--output=file] [--to-tag=tag] [--include-all]');
     process.exit(1);
   }
 
   const generator = new ChangelogGenerator({
     fromTag,
-    includeAll: process.env.INCLUDE_ALL === 'true'
+    toTag,
+    outputFile,
+    includeAll
   });
 
   try {
-    generator.generate(version);
+    const changelog = generator.generate(version);
+    
+    // If output is not the default CHANGELOG.md, also write to stdout for CI
+    if (outputFile !== 'CHANGELOG.md') {
+      console.log(changelog);
+    }
   } catch (error) {
     console.error('Error generating changelog:', error.message);
     process.exit(1);

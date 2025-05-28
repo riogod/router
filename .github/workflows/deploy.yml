@@ -170,16 +170,37 @@ jobs:
           
           echo "🎉 Updating GitHub Release: $TAG_NAME"
           
+          # Generate complete changelog for this release
+          echo "📋 Generating complete changelog for release..."
+          
+          # Get the previous tag for changelog generation
+          PREV_TAG=$(git describe --tags --abbrev=0 "$TAG_NAME^" 2>/dev/null || echo "")
+          
+          if [ -n "$PREV_TAG" ]; then
+            echo "📊 Generating changelog from $PREV_TAG to $TAG_NAME..."
+            # Generate changelog including all commits up to the tag (including release branch commits)
+            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js "$VERSION" "$PREV_TAG" --output=/tmp/temp_changelog.md --to-tag="$TAG_NAME")
+          else
+            echo "📊 Generating changelog for first release..."
+            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js "$VERSION" --output=/tmp/temp_changelog.md --to-tag="$TAG_NAME")
+          fi
+          
           # Check if release already exists (draft)
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             echo "📝 Updating existing draft release..."
             
-            # Get current release notes
+            # Get current release notes and clean them
             CURRENT_NOTES=$(gh release view "$TAG_NAME" --json body -q .body)
             
-            # Create temporary file for new notes
+            # Remove draft warning from existing notes
+            CLEANED_NOTES=$(echo "$CURRENT_NOTES" | sed '/> ⚠️ \*\*This is a draft release\.\*\*/d')
+            
+            # Create new release notes with complete changelog
             {
-              echo "$CURRENT_NOTES"
+              # Add the cleaned original content (without draft warning)
+              echo "$CLEANED_NOTES"
+              echo ""
+              echo "---"
               echo ""
               echo "## 🚀 Release Published!"
               echo ""
@@ -210,9 +231,18 @@ jobs:
           else
             echo "📝 Creating new release..."
             
-            # Create temporary file for release notes
+            # Read generated changelog content
+            if [ -f "/tmp/temp_changelog.md" ]; then
+              CHANGELOG_SECTION=$(cat /tmp/temp_changelog.md)
+            else
+              CHANGELOG_SECTION="### 📝 Other Changes\n\n- Updates and improvements"
+            fi
+            
+            # Create complete release notes with changelog
             {
-              echo "## 🚀 Release v$VERSION"
+              echo "$CHANGELOG_SECTION"
+              echo ""
+              echo "---"
               echo ""
               echo "### 📦 Published packages:"
             } > /tmp/release_notes.md

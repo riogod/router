@@ -191,24 +191,32 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
           
           # Generate changelog using our advanced script
+          # Include commits from current branch (release branch) up to HEAD
           if [ -n "$LAST_TAG" ]; then
-            echo "📊 Generating changelog from $LAST_TAG to current version..."
-            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }} $LAST_TAG)
+            echo "📊 Generating changelog from $LAST_TAG to current HEAD..."
+            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }} $LAST_TAG --output=/tmp/temp_changelog.md --to-tag=HEAD)
           else
             echo "📊 Generating changelog for first release..."
-            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }})
+            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }} --output=/tmp/temp_changelog.md --to-tag=HEAD)
+          fi
+          
+          # Read the generated changelog content
+          if [ -f "/tmp/temp_changelog.md" ]; then
+            CHANGELOG_SECTION=$(cat /tmp/temp_changelog.md)
+          else
+            CHANGELOG_SECTION="### 📝 Other Changes\n\n- Updates and improvements"
           fi
           
           # Add custom release notes if provided
           if [ -n "${{ github.event.inputs.release_notes }}" ]; then
             RELEASE_NOTES="## 🚀 Release v${{ steps.version.outputs.new_version }}\n\n"
             RELEASE_NOTES="${RELEASE_NOTES}${{ github.event.inputs.release_notes }}\n\n"
-            RELEASE_NOTES="${RELEASE_NOTES}${CHANGELOG_CONTENT}"
+            RELEASE_NOTES="${RELEASE_NOTES}${CHANGELOG_SECTION}"
           else
-            RELEASE_NOTES="$CHANGELOG_CONTENT"
+            RELEASE_NOTES="$CHANGELOG_SECTION"
           fi
           
-          # Add release metadata
+          # Add release metadata and draft warning
           RELEASE_NOTES="${RELEASE_NOTES}\n\n---\n\n"
           RELEASE_NOTES="${RELEASE_NOTES}**Release type:** ${{ steps.version.outputs.version_type }}\n"
           RELEASE_NOTES="${RELEASE_NOTES}**Previous version:** ${{ steps.version.outputs.current_version }}\n"
