@@ -1,215 +1,214 @@
-# GitHub Actions Workflows
+# CI/CD Documentation
 
-Этот проект использует GitHub Actions для автоматизации CI/CD процессов.
+Этот проект использует **GitHub Flow** с автоматизированными релизами.
 
-## 🔄 Workflows
+## 🌊 GitHub Flow Process
+
+### 📋 Основной процесс разработки:
+
+1. **Создание фичи:**
+   ```bash
+   git checkout master
+   git pull
+   git checkout -b feature/my-awesome-feature
+   # ... разработка ...
+   git push -u origin feature/my-awesome-feature
+   ```
+
+2. **Pull Request в master:**
+   - Создаете PR из `feature/my-awesome-feature` в `master`
+   - Проходят CI проверки
+   - Code review
+   - Мерж в `master`
+
+3. **Создание релиза:**
+   - Используете **Create Release** workflow в GitHub Actions
+   - Выбираете тип релиза (auto/patch/minor/major/prerelease)
+   - Автоматически создается:
+     - 🏷️ **Тег** (например, `v0.1.0`)
+     - 📝 **Draft Release** с changelog
+     - 🌿 **Release ветка** (например, `release/v0.1.0`)
+     - 🔄 **Pull Request** в master
+
+4. **Финализация релиза:**
+   - Проверяете созданный PR
+   - Мержите PR в `master`
+   - Автоматически запускается **Deploy workflow**:
+     - 📦 Публикует пакеты в npm
+     - 🎉 Превращает Draft Release в полноценный релиз
+
+## 🚀 Workflows
 
 ### 1. **CI Workflow** (`.github/workflows/ci.yml`)
 
 **Триггеры:**
-- Pull requests в `master` и `release/v*` ветки
+- Pull requests в `master` и `release/*` ветки
+- Push в `master` и `release/*` ветки
+
+**Что делает:**
+- 🧪 Тестирование на Node.js 16.x, 18.x, 20.x, 22.x
+- 🔍 Линтинг и проверка типов
+- 🏗️ Сборка пакетов
+- 🔒 Security audit
+- 📊 Coverage отчеты
+- 🔍 CodeQL анализ безопасности
+
+**Path filtering:** Джобы запускаются только при изменении кода пакетов, не workflow файлов.
+
+### 2. **Create Release Workflow** (`.github/workflows/create-release.yml`)
+
+**Триггер:** Ручной запуск (workflow_dispatch)
+
+**Параметры:**
+- **version_type**: `auto` | `patch` | `minor` | `major` | `prerelease`
+- **custom_version**: Кастомная версия (опционально)
+- **release_notes**: Заметки к релизу (опционально)
+
+**Что делает:**
+1. 🔍 **Анализирует коммиты** (для `auto` режима):
+   - `feat:` → minor релиз
+   - `fix:` → patch релиз
+   - `feat!:` или `fix!:` → major релиз
+   - Остальное → patch релиз
+
+2. 🏷️ **Создает тег** на текущем коммите
+
+3. 🌿 **Создает release ветку** с обновленными версиями
+
+4. 📝 **Создает Draft Release** с автоматическим changelog
+
+5. 🔄 **Создает Pull Request** в master
+
+**Пример использования:**
+```bash
+# Автоматическое определение типа релиза
+GitHub Actions → Create Release → version_type: auto
+
+# Конкретный тип релиза
+GitHub Actions → Create Release → version_type: minor
+
+# Кастомная версия
+GitHub Actions → Create Release → custom_version: 1.0.0-beta.1
+```
+
+### 3. **Deploy Workflow** (`.github/workflows/deploy.yml`)
+
+**Триггеры:**
+- Push в `master` (только для release merges)
+- Ручной запуск (workflow_dispatch)
+
+**Логика деплоя:**
+- ✅ Запускается ТОЛЬКО при мерже release ветки в master
+- ❌ НЕ запускается для обычных коммитов в master
+
+**Что делает:**
+1. 🔍 **Проверяет версии** во всех пакетах
+2. 🧪 **Запускает тесты** перед публикацией
+3. 📦 **Публикует пакеты** в npm:
+   - `latest` тег для стабильных версий
+   - `beta` тег для prerelease версий
+4. 🎉 **Обновляет GitHub Release**:
+   - Превращает Draft в полноценный релиз
+   - Добавляет ссылки на опубликованные пакеты
+
+### 4. **CodeQL Workflow** (`.github/workflows/codeql.yml`)
+
+**Триггеры:**
+- Pull requests
 - Push в `master`
-- Ручной запуск
+- Еженедельно по расписанию
 
 **Что делает:**
-- ✅ Запускает тесты на Node.js 16, 18, 20, 22
-- 🔍 Проверяет линтинг и TypeScript компиляцию
-- 🏗️ Собирает пакеты
-- 🛡️ Проверяет безопасность (npm audit)
-- 📊 Генерирует coverage отчеты (только для PR)
-- 💬 Комментирует PR при ошибках
-- ✅ Работает одинаково для PR в master и release ветки
+- 🔍 Анализ безопасности JavaScript/TypeScript кода
+- 🚨 Поиск уязвимостей и проблем безопасности
+- 📋 Отчеты в GitHub Security tab
 
-### 2. **Deploy Workflow** (`.github/workflows/deploy.yml`)
+## 📦 Package Management
 
-**Триггеры:**
-- Push в `master` (но **ТОЛЬКО** при мерже из `release/vX.Y.Z` веток)
-- Ручной запуск с выбором типа версии
-
-**⚠️ Важно:** Деплой **НЕ** запускается при обычных коммитах или мерже feature/fix веток в master!
-
-**Что делает:**
-- 🔍 Проверяет является ли это мержем из release ветки
-- ✅ Запускает тесты (только для release merge)
-- 📦 Собирает пакеты
-- 🏷️ Использует точную версию из имени release ветки
-- 🚀 Публикует в npm
-- 📝 Создает GitHub Release
-
-### 3. **CodeQL Workflow** (`.github/workflows/codeql.yml`)
-
-**Триггеры:**
-- Pull requests в `master`
-- Push в `master`
-- Еженедельно по расписанию (понедельник)
-
-**Что делает:**
-- 🔍 Сканирует код на уязвимости безопасности
-- 📊 Анализирует JavaScript/TypeScript код
-- 🛡️ Создает отчеты о безопасности в GitHub Security
-
-### 4. **Publish Workflow** (`.github/workflows/publish.yml`)
-
-**Триггеры:**
-- Push тегов `v*.*.*`
-- Ручной запуск
-
-**Что делает:**
-- 📦 Публикует пакеты в npm при создании тега
-
-
-
-
-
-## 🌳 Стратегия веток
-
-### **Master Branch**
-- Основная ветка разработки
-- PR мержатся сюда после прохождения всех проверок
-- Автоматический деплой при мерже
-
-### **Release Branches** (`release/vX.Y.Z`)
-- Ветки для подготовки релизов с точной версией в имени
-- Формат: `release/v1.0.1`, `release/v1.0.1-beta`, `release/v2.0.0-alpha.1`
-- PR из release веток в `master` автоматически устанавливают версию из имени ветки
-- Специальные проверки и комментарии в PR
-- Автоматический деплой с точной версией при мерже
-
-### **Feature Branches**
-- Фичевые ветки для разработки
-- Могут создавать PR в `master` или `release/vX.Y.Z`
-- Тесты запускаются при создании/обновлении PR
-- При PR в release ветку проходят те же проверки, что и для master
-
-## 🚀 Процесс релиза
-
-### Release Branch (рекомендуется для версионных релизов)
-1. Создайте ветку `release/vX.Y.Z` (например, `release/v1.0.1-beta`)
-2. Добавьте фичи и исправления в эту ветку
-3. Создайте PR из `release/vX.Y.Z` в `master`
-4. Система автоматически:
-   - Проверит формат версии в имени ветки
-   - Запустит все тесты и проверки
-   - Добавит комментарий с информацией о релизе
-5. После мержа версия будет установлена точно как в имени ветки
-6. Автоматически создастся тег и произойдет деплой
-
-### Автоматический (для обычных обновлений)
-1. Создайте PR в `master`
-2. После мержа автоматически запустится деплой
-3. Версия определится по типу коммитов:
-   - `feat!:` → major
-   - `feat:` → minor  
-   - `fix:` → patch
-
-### Ручной
-1. Перейдите в Actions → Deploy
-2. Нажмите "Run workflow"
-3. Выберите тип версии (patch/minor/major/prerelease)
-
-## 📋 Требования для мержа
-
-### Branch Protection Rules
-Настройте в Settings → Branches для `master`:
-
-- ✅ Require status checks to pass before merging
-- ✅ Require branches to be up to date before merging
-- ✅ Required status checks:
-  - `Test (Node 16.x)`
-  - `Test (Node 18.x)` 
-  - `Test (Node 20.x)`
-  - `Test (Node 22.x)`
-  - `build`
-  - `security`
-  - `Analyze (javascript-typescript)`
-- ✅ Require pull request reviews before merging
-- ✅ Dismiss stale PR approvals when new commits are pushed
-
-### Workflow Permissions
-Убедитесь, что в Settings → Actions → General:
-- ✅ Workflow permissions: "Read and write permissions"
-- ✅ Allow GitHub Actions to create and approve pull requests: включено
-
-## 🔐 Секреты
-
-Добавьте в Settings → Secrets and variables → Actions:
-
-- `NPM_TOKEN` - токен для публикации в npm
-- `CODECOV_TOKEN` - токен для Codecov (опционально)
-
-## 🏷️ Conventional Commits
-
-Используйте conventional commits для автоматического определения версий:
-
-```bash
-feat: add new router feature          # minor version bump
-fix: resolve navigation bug           # patch version bump  
-feat!: breaking change in API        # major version bump
-docs: update README                   # no version bump
+### Структура пакетов:
+```
+packages/
+├── router/                 # @riogz/router
+├── react-router/          # @riogz/react-router  
+├── router-helpers/        # @riogz/router-helpers
+├── router-plugin-browser/ # @riogz/router-plugin-browser
+├── router-plugin-logger/  # @riogz/router-plugin-logger
+├── router-plugin-persistent-params/ # @riogz/router-plugin-persistent-params
+└── router-transition-path/ # @riogz/router-transition-path
 ```
 
+### Версионирование:
+- Все пакеты используют **одинаковую версию**
+- Версии обновляются автоматически в release ветках
+- Поддерживаются prerelease версии (например, `1.0.0-beta.1`)
 
-## 📊 Статусы и badges
+## 🔧 Configuration
 
-Добавьте в README.md:
-
-```markdown
-[![CI](https://github.com/riogod/router/actions/workflows/ci.yml/badge.svg)](https://github.com/riogod/router/actions/workflows/ci.yml)
-[![Deploy](https://github.com/riogod/router/actions/workflows/deploy.yml/badge.svg)](https://github.com/riogod/router/actions/workflows/deploy.yml)
-[![codecov](https://codecov.io/gh/riogod/router/branch/master/graph/badge.svg)](https://codecov.io/gh/riogod/router)
+### Environment Variables (в `.cursor/mcp.json` для MCP):
+```json
+{
+  "env": {
+    "NPM_TOKEN": "your-npm-token",
+    "GITHUB_TOKEN": "auto-provided"
+  }
+}
 ```
 
-## 📋 Примеры использования Release веток
+### Required Secrets:
+- `NPM_TOKEN`: Токен для публикации в npm
+- `GITHUB_TOKEN`: Автоматически предоставляется GitHub Actions
 
-### Создание release ветки для патча
+## 📋 Branch Protection Rules
+
+### Master Branch:
+- ✅ Require pull request reviews
+- ✅ Require status checks:
+  - `ci-success` (объединенный статус всех CI проверок)
+  - `Analyze (javascript-typescript)` (CodeQL)
+- ✅ Require branches to be up to date
+- ✅ Restrict pushes that create files larger than 100MB
+
+## 🎯 Best Practices
+
+### Commit Messages:
+Используйте [Conventional Commits](https://www.conventionalcommits.org/):
 ```bash
-# Создаем ветку для версии 1.0.1
-git checkout -b release/v1.0.1
-git push -u origin release/v1.0.1
-
-# Добавляем исправления
-git add .
-git commit -m "fix: resolve critical bug"
-git push
-
-# Создаем PR в master
-gh pr create --title "Release v1.0.1" --body "Bug fixes for v1.0.1"
+feat: добавить новую функцию роутинга
+fix: исправить баг с навигацией  
+feat!: изменить API роутера (breaking change)
+docs: обновить документацию
+chore: обновить зависимости
 ```
 
-### Работа с feature ветками в release
-```bash
-# Создаем release ветку
-git checkout -b release/v1.2.0
-git push -u origin release/v1.2.0
+### Release Process:
+1. **Разработка** → PR в `master` → мерж
+2. **Готовность к релизу** → Create Release workflow
+3. **Проверка** → review созданного PR
+4. **Публикация** → мерж release PR → автоматический деплой
 
-# Создаем feature ветку от release
-git checkout -b feature/new-api release/v1.2.0
-git push -u origin feature/new-api
+### Hotfixes:
+Для критических исправлений:
+1. Создайте PR прямо в `master`
+2. После мержа запустите Create Release workflow с типом `patch`
 
-# Разрабатываем фичу
-git add .
-git commit -m "feat: implement new API endpoint"
-git push
+## 🚨 Troubleshooting
 
-# Создаем PR в release ветку (не в master!)
-gh pr create --base release/v1.2.0 --title "Add new API" --body "New API for v1.2.0"
+### Deploy не запускается:
+- Проверьте, что commit message содержит паттерн release merge
+- Убедитесь, что это мерж из `release/vX.Y.Z` ветки
 
-# После мержа feature в release, создаем PR release в master
-git checkout release/v1.2.0
-gh pr create --title "Release v1.2.0" --body "New release with API improvements"
-```
+### CI проверки пропускаются:
+- Это нормально, если изменились только workflow файлы
+- Path filtering автоматически определяет, нужно ли запускать тесты
 
-### Создание pre-release ветки
-```bash
-# Создаем ветку для бета версии
-git checkout -b release/v2.0.0-beta.1
-git push -u origin release/v2.0.0-beta.1
+### Пакеты не публикуются:
+- Проверьте `NPM_TOKEN` в secrets
+- Убедитесь, что версии во всех пакетах одинаковые
+- Проверьте, что версия еще не опубликована
 
-# Добавляем экспериментальные фичи
-git add .
-git commit -m "feat!: breaking changes for v2"
-git push
+## 📚 Links
 
-# Создаем PR в master
-gh pr create --title "Release v2.0.0-beta.1" --body "Beta release with breaking changes"
-``` 
+- [GitHub Flow Guide](https://guides.github.com/introduction/flow/)
+- [Conventional Commits](https://www.conventionalcommits.org/)
+- [Semantic Versioning](https://semver.org/)
+- [npm Publishing Guide](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry) 

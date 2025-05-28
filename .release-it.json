@@ -1,8 +1,8 @@
 {
   "git": {
     "commit": false,
-    "tag": true,
-    "push": true,
+    "tag": false,
+    "push": false,
     "tagName": "v${version}",
     "requireCleanWorkingDir": false
   },
@@ -10,8 +10,7 @@
     "publish": false
   },
   "github": {
-    "release": true,
-    "releaseName": "Release v${version}"
+    "release": false
   },
   "plugins": {
     "@release-it/conventional-changelog": {
@@ -21,6 +20,6 @@
   },
   "hooks": {
     "before:bump": [],
-    "after:bump": ["node ./scripts/publish-packages.js"]
+    "after:bump": []
   }
 } 
