@@ -1,0 +1,241 @@
+name: Deploy
+
+on:
+  # Деплой при push в master (но только если это merge из release ветки)
+  push:
+    branches:
+      - master
+  
+  # Возможность запуска вручную
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+
+jobs:
+  # Проверяем является ли это мержем из release ветки
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      is_release_merge: ${{ steps.check.outputs.is_release_merge }}
+      target_version: ${{ steps.check.outputs.target_version }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Нужно для проверки истории
+          
+      - name: Check if deployment needed and detect release merge
+        id: check
+        run: |
+          # Проверяем, является ли это мержем из release ветки
+          MERGE_COMMIT_MSG="${{ github.event.head_commit.message }}"
+          IS_RELEASE_MERGE="false"
+          TARGET_VERSION=""
+          
+          # Отладочная информация
+          echo "=== DEBUG INFO ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Head commit message: '$MERGE_COMMIT_MSG'"
+          echo "Head commit SHA: ${{ github.event.head_commit.id }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "=================="
+          
+          # Проверяем паттерн merge commit из release ветки (включая суффиксы)
+          if echo "$MERGE_COMMIT_MSG" | grep -qE "Merge pull request .* from .*/release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?"; then
+            IS_RELEASE_MERGE="true"
+            # Извлекаем версию из commit message (включая суффиксы типа -beta.1, -alpha)
+            TARGET_VERSION=$(echo "$MERGE_COMMIT_MSG" | grep -oE "release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?" | sed 's/release\/v//')
+            echo "Detected release merge with target version: $TARGET_VERSION"
+          elif echo "$MERGE_COMMIT_MSG" | grep -qE "Merge branch 'release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?"; then
+            IS_RELEASE_MERGE="true"
+            TARGET_VERSION=$(echo "$MERGE_COMMIT_MSG" | grep -oE "release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?" | sed 's/release\/v//')
+            echo "Detected direct release branch merge with target version: $TARGET_VERSION"
+          elif echo "$MERGE_COMMIT_MSG" | grep -qE "Release v\.?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)? \(#[0-9]+\)"; then
+            IS_RELEASE_MERGE="true"
+            # Извлекаем версию из commit message типа "Release v.0.0.5 (#3)"
+            TARGET_VERSION=$(echo "$MERGE_COMMIT_MSG" | grep -oE "v\.?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?" | sed 's/v\.*//')
+            echo "Detected release commit with target version: $TARGET_VERSION"
+          fi
+          
+          echo "Merge commit message: $MERGE_COMMIT_MSG"
+          echo "Is release merge: $IS_RELEASE_MERGE"
+          echo "Target version: $TARGET_VERSION"
+          
+          echo "is_release_merge=$IS_RELEASE_MERGE" >> $GITHUB_OUTPUT
+          echo "target_version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+          
+          # Деплой запускается ТОЛЬКО при мерже из release ветки
+          if [ "$IS_RELEASE_MERGE" = "true" ]; then
+            echo "Release merge detected - deployment will proceed"
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "Not a release merge - skipping deployment"
+            echo "Regular commits to master should not trigger deployment"
+            echo "Only merges from release/vX.Y.Z branches trigger deployment"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Запускаем тесты перед деплоем
+  test:
+    needs: verify
+    if: needs.verify.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Run linting
+        if: matrix.node-version == '20.x'
+        run: npm run lint
+
+  # Сборка и деплой
+  deploy:
+    needs: [verify, test]
+    if: needs.verify.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Для создания тегов и релизов
+      packages: write # Для публикации в GitHub Packages (если нужно)
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org/'
+          
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build packages
+        run: npm run build
+        
+      - name: Determine version bump
+        id: version
+        run: |
+          if [ "${{ needs.verify.outputs.is_release_merge }}" = "true" ]; then
+            # Для release merge используем точную версию из имени ветки
+            TARGET_VERSION="${{ needs.verify.outputs.target_version }}"
+            echo "version_type=exact" >> $GITHUB_OUTPUT
+            echo "exact_version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+            echo "Will set exact version: $TARGET_VERSION"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION_TYPE="${{ github.event.inputs.version_type }}"
+            echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+            echo "Will bump $VERSION_TYPE version"
+          else
+            # Автоматически определяем тип версии по коммитам
+            COMMITS=$(git log --oneline $(git describe --tags --abbrev=0 2>/dev/null || echo "")..HEAD)
+            
+            if echo "$COMMITS" | grep -qE "^[a-f0-9]+ (feat|feature)(\(.+\))?!:"; then
+              VERSION_TYPE="major"
+            elif echo "$COMMITS" | grep -qE "^[a-f0-9]+ (feat|feature)(\(.+\))?:"; then
+              VERSION_TYPE="minor"
+            elif echo "$COMMITS" | grep -qE "^[a-f0-9]+ (fix|bugfix)(\(.+\))?:"; then
+              VERSION_TYPE="patch"
+            else
+              VERSION_TYPE="patch"
+            fi
+            
+            echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+            echo "Will bump $VERSION_TYPE version"
+          fi
+          
+      - name: Release
+        run: |
+          if [ "${{ steps.version.outputs.version_type }}" = "exact" ]; then
+            # Устанавливаем точную версию для release merge
+            npm run release -- --ci --release-version=${{ steps.version.outputs.exact_version }}
+          else
+            # Обычный increment для других случаев
+            npm run release -- --ci --increment=${{ steps.version.outputs.version_type }}
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Get new version
+        id: new_version
+        run: |
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.new_version.outputs.version }}
+          name: Release v${{ steps.new_version.outputs.version }}
+          body: |
+            ## Changes in v${{ steps.new_version.outputs.version }}
+            
+            ### Commits
+            ${{ github.event.head_commit.message }}
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v0.0.4...v${{ steps.new_version.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(steps.new_version.outputs.version, '-') }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Уведомления об успешном деплое
+  notify-success:
+    needs: [deploy]
+    if: success()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify success
+        run: |
+          echo "🚀 Deployment successful!"
+          echo "Version: ${{ needs.deploy.outputs.version }}"
+          
+  # Уведомления об ошибке деплоя
+  notify-failure:
+    needs: [deploy]
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify failure
+        run: |
+          echo "❌ Deployment failed!"
+          exit 1 
