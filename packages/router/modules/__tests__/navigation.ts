@@ -312,4 +312,26 @@ describe('core/navigation', function() {
             router.cancel();
         }, 10); // Очень короткая задержка
     });
+
+    it('should return ROUTE_NOT_FOUND error with route details when navigating to non-existent route', done => {
+        router.navigate('non.existent.route', { param1: 'value1', param2: 123 }, function(err) {
+            expect(err).toBeDefined();
+            expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+            expect(err.route).toBeDefined();
+            expect(err.route.name).toBe('non.existent.route');
+            expect(err.route.params).toEqual({ param1: 'value1', param2: 123 });
+            done();
+        });
+    });
+
+    it('should return ROUTE_NOT_FOUND error with empty params when navigating to non-existent route without params', done => {
+        router.navigate('another.fake.route', function(err) {
+            expect(err).toBeDefined();
+            expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+            expect(err.route).toBeDefined();
+            expect(err.route.name).toBe('another.fake.route');
+            expect(err.route.params).toEqual({});
+            done();
+        });
+    });
 })
