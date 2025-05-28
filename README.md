@@ -201,3 +201,4 @@ MIT © [Vyacheslav Krasnyanskiy](https://github.com/riogod)
 - [Issues](https://github.com/riogod/router/issues)
 - [Contributing Guide](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
+# Release v0.0.10 - Исправления release-it конфигурации
