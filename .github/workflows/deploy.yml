@@ -48,12 +48,12 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=%s)
           echo "Commit message: $COMMIT_MSG"
           
-          # Check if this is a release branch merge
-          if echo "$COMMIT_MSG" | grep -qE "(Merge pull request .* from .*/release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?|Merge branch 'release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?'|Release v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)? \\(#[0-9]+\\))"; then
-            echo "✅ Found release branch merge - deploy needed"
+          # Check if this is a release branch merge or release commit
+          if echo "$COMMIT_MSG" | grep -qE "(Merge pull request .* from .*/release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?|Merge branch 'release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?'|Release v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)? \\(#[0-9]+\\)|chore\\(release\\): bump version to [0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?)"; then
+            echo "✅ Found release commit - deploy needed"
             
             # Extract version from commit message
-            VERSION=$(echo "$COMMIT_MSG" | grep -oE "v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?" | head -1 | sed 's/^v//')
+            VERSION=$(echo "$COMMIT_MSG" | grep -oE "v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?" | head -1 | sed 's/^v//')
             
             if [ -z "$VERSION" ]; then
               # If couldn't extract version from commit, use package.json
@@ -67,7 +67,7 @@ jobs:
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "is_prerelease=$(echo $VERSION | grep -q '-' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           else
-            echo "❌ Not a release branch merge - deploy not needed"
+            echo "❌ Not a release commit - deploy not needed"
             echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
 
