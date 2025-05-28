@@ -1,19 +1,19 @@
 name: Deploy
 
 on:
-  # Деплой при push в master (только для release merges)
+  # Deploy on push to master (only for release merges)
   push:
     branches: [master]
-  # Возможность запуска вручную
+  # Manual trigger option
   workflow_dispatch:
     inputs:
       version:
-        description: 'Версия для деплоя (опционально, будет определена автоматически)'
+        description: 'Version to deploy (optional, will be determined automatically)'
         required: false
         type: string
 
 jobs:
-  # Проверяем, нужно ли делать деплой
+  # Check if deploy is needed
   check-deploy:
     runs-on: ubuntu-latest
     outputs:
@@ -25,12 +25,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # Нужно для сравнения коммитов
+          fetch-depth: 2 # Needed for commit comparison
           
       - name: Check if deploy needed
         id: check
         run: |
-          # Если запущено вручную
+          # If triggered manually
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ -n "${{ github.event.inputs.version }}" ]; then
               VERSION="${{ github.event.inputs.version }}"
@@ -40,45 +40,45 @@ jobs:
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "is_prerelease=$(echo $VERSION | grep -q '-' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-            echo "🚀 Ручной запуск деплоя версии $VERSION"
+            echo "🚀 Manual deploy trigger for version $VERSION"
             exit 0
           fi
           
-          # Проверяем commit message для автоматического деплоя
+          # Check commit message for automatic deploy
           COMMIT_MSG=$(git log -1 --pretty=%s)
           echo "Commit message: $COMMIT_MSG"
           
-          # Проверяем, является ли это мержем release ветки
+          # Check if this is a release branch merge
           if echo "$COMMIT_MSG" | grep -qE "(Merge pull request .* from .*/release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?|Merge branch 'release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?'|Release v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)? \\(#[0-9]+\\))"; then
-            echo "✅ Найден мерж release ветки - деплой нужен"
+            echo "✅ Found release branch merge - deploy needed"
             
-            # Извлекаем версию из commit message
+            # Extract version from commit message
             VERSION=$(echo "$COMMIT_MSG" | grep -oE "v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\\.[0-9]+)?)?" | head -1 | sed 's/^v//')
             
             if [ -z "$VERSION" ]; then
-              # Если не удалось извлечь версию из коммита, берем из package.json
+              # If couldn't extract version from commit, use package.json
               VERSION=$(node -p "require('./package.json').version")
-              echo "⚠️ Не удалось извлечь версию из коммита, используем версию из package.json: $VERSION"
+              echo "⚠️ Could not extract version from commit, using package.json version: $VERSION"
             else
-              echo "🎯 Извлечена версия из коммита: $VERSION"
+              echo "🎯 Extracted version from commit: $VERSION"
             fi
             
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "is_prerelease=$(echo $VERSION | grep -q '-' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           else
-            echo "❌ Это не мерж release ветки - деплой не нужен"
+            echo "❌ Not a release branch merge - deploy not needed"
             echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
 
-  # Основной деплой
+  # Main deploy job
   deploy:
     needs: check-deploy
     if: needs.check-deploy.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write # Для npm provenance
+      id-token: write # For npm provenance
       
     steps:
       - name: Checkout
@@ -105,54 +105,54 @@ jobs:
         
       - name: Security audit
         run: npm run audit:ci
-        continue-on-error: true # Не блокируем деплой из-за аудита
+        continue-on-error: true # Don't block deploy due to audit
         
       - name: Verify version consistency
         run: |
           EXPECTED_VERSION="${{ needs.check-deploy.outputs.version }}"
-          echo "🔍 Проверяем версии пакетов..."
+          echo "🔍 Checking package versions..."
           
-          # Проверяем все package.json файлы
+          # Check all package.json files
           find packages -name "package.json" -exec sh -c '
             PACKAGE_VERSION=$(node -p "require(\"$1\").version")
             PACKAGE_NAME=$(node -p "require(\"$1\").name")
             echo "📦 $PACKAGE_NAME: $PACKAGE_VERSION"
             if [ "$PACKAGE_VERSION" != "'"$EXPECTED_VERSION"'" ]; then
-              echo "❌ Версия пакета $PACKAGE_NAME ($PACKAGE_VERSION) не соответствует ожидаемой ('"$EXPECTED_VERSION"')"
+              echo "❌ Package version $PACKAGE_NAME ($PACKAGE_VERSION) does not match expected ('"$EXPECTED_VERSION"')"
               exit 1
             fi
           ' _ {} \;
           
-          echo "✅ Все версии пакетов соответствуют ожидаемой: $EXPECTED_VERSION"
+          echo "✅ All package versions match expected: $EXPECTED_VERSION"
           
       - name: Publish to npm
         run: |
-          echo "📦 Публикуем пакеты в npm..."
+          echo "📦 Publishing packages to npm..."
           
-          # Публикуем каждый пакет
+          # Publish each package
           for package_dir in packages/*/; do
             if [ -f "$package_dir/package.json" ]; then
               PACKAGE_NAME=$(node -p "require('./$package_dir/package.json').name")
               PACKAGE_VERSION=$(node -p "require('./$package_dir/package.json').version")
               
-              echo "🚀 Публикуем $PACKAGE_NAME@$PACKAGE_VERSION..."
+              echo "🚀 Publishing $PACKAGE_NAME@$PACKAGE_VERSION..."
               
               cd "$package_dir"
               
-              # Проверяем, не опубликована ли уже эта версия
+              # Check if this version is already published
               if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version 2>/dev/null; then
-                echo "⚠️ Версия $PACKAGE_NAME@$PACKAGE_VERSION уже опубликована, пропускаем"
+                echo "⚠️ Version $PACKAGE_NAME@$PACKAGE_VERSION already published, skipping"
               else
-                # Определяем тег для публикации
+                # Determine tag for publishing
                 if [[ "$PACKAGE_VERSION" == *"-"* ]]; then
                   NPM_TAG="beta"
                 else
                   NPM_TAG="latest"
                 fi
                 
-                echo "📤 Публикуем с тегом: $NPM_TAG"
+                echo "📤 Publishing with tag: $NPM_TAG"
                 npm publish --tag "$NPM_TAG" --provenance --access public
-                echo "✅ $PACKAGE_NAME@$PACKAGE_VERSION опубликован"
+                echo "✅ $PACKAGE_NAME@$PACKAGE_VERSION published"
               fi
               
               cd - > /dev/null
@@ -168,30 +168,30 @@ jobs:
           TAG_NAME="v$VERSION"
           IS_PRERELEASE="${{ needs.check-deploy.outputs.is_prerelease }}"
           
-          echo "🎉 Обновляем GitHub Release: $TAG_NAME"
+          echo "🎉 Updating GitHub Release: $TAG_NAME"
           
-          # Проверяем, существует ли уже release (draft)
+          # Check if release already exists (draft)
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            echo "📝 Обновляем существующий draft release..."
+            echo "📝 Updating existing draft release..."
             
-            # Получаем текущие release notes
+            # Get current release notes
             CURRENT_NOTES=$(gh release view "$TAG_NAME" --json body -q .body)
             
-            # Создаем временный файл для новых notes
-            cat > /tmp/release_notes.md << 'EOF'
-          $CURRENT_NOTES
-          
-          ## 🚀 Релиз опубликован!
-          
-          ✅ **Статус:** Опубликован  
-          📦 **npm пакеты:** Опубликованы  
-          🏷️ **Тег:** `$TAG_NAME`  
-          📅 **Дата:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')  
-          
-          ### 📦 Опубликованные пакеты:
-          EOF
+            # Create temporary file for new notes
+            {
+              echo "$CURRENT_NOTES"
+              echo ""
+              echo "## 🚀 Release Published!"
+              echo ""
+              echo "✅ **Status:** Published"
+              echo "📦 **npm packages:** Published"
+              echo "🏷️ **Tag:** \`$TAG_NAME\`"
+              echo "📅 **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+              echo ""
+              echo "### 📦 Published packages:"
+            } > /tmp/release_notes.md
             
-            # Добавляем список опубликованных пакетов
+            # Add list of published packages
             for package_dir in packages/*/; do
               if [ -f "$package_dir/package.json" ]; then
                 PACKAGE_NAME=$(node -p "require('./$package_dir/package.json').name")
@@ -199,23 +199,23 @@ jobs:
               fi
             done
             
-            # Обновляем release (убираем draft статус)
+            # Update release (remove draft status)
             gh release edit "$TAG_NAME" \
               --notes-file /tmp/release_notes.md \
               --draft=false \
               --prerelease="$IS_PRERELEASE"
               
-            echo "✅ Draft release обновлен и опубликован!"
+            echo "✅ Draft release updated and published!"
             
           else
-            echo "📝 Создаем новый release..."
+            echo "📝 Creating new release..."
             
-            # Создаем временный файл для release notes
-            cat > /tmp/release_notes.md << EOF
-          ## 🚀 Release v$VERSION
-          
-          ### 📦 Опубликованные пакеты:
-          EOF
+            # Create temporary file for release notes
+            {
+              echo "## 🚀 Release v$VERSION"
+              echo ""
+              echo "### 📦 Published packages:"
+            } > /tmp/release_notes.md
             
             for package_dir in packages/*/; do
               if [ -f "$package_dir/package.json" ]; then
@@ -224,21 +224,21 @@ jobs:
               fi
             done
             
-            cat >> /tmp/release_notes.md << EOF
-          
-          ---
-          
-          ✅ **Статус:** Опубликован  
-          📅 **Дата:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')  
-          EOF
+            {
+              echo ""
+              echo "---"
+              echo ""
+              echo "✅ **Status:** Published"
+              echo "📅 **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            } >> /tmp/release_notes.md
             
-            # Создаем новый release
+            # Create new release
             gh release create "$TAG_NAME" \
               --title "🚀 Release v$VERSION" \
               --notes-file /tmp/release_notes.md \
               --prerelease="$IS_PRERELEASE"
               
-            echo "✅ Новый release создан!"
+            echo "✅ New release created!"
           fi
           
         env:
@@ -247,14 +247,14 @@ jobs:
       - name: Summary
         run: |
           VERSION="${{ needs.check-deploy.outputs.version }}"
-          echo "## 🎉 Деплой завершен!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Deploy completed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Что опубликовано:" >> $GITHUB_STEP_SUMMARY
-          echo "- **🏷️ Версия:** \`v$VERSION\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **📦 npm пакеты:** Опубликованы" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 What was published:" >> $GITHUB_STEP_SUMMARY
+          echo "- **🏷️ Version:** \`v$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **📦 npm packages:** Published" >> $GITHUB_STEP_SUMMARY
           echo "- **🎉 GitHub Release:** [v$VERSION](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Опубликованные пакеты:" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Published packages:" >> $GITHUB_STEP_SUMMARY
           
           for package_dir in packages/*/; do
             if [ -f "$package_dir/package.json" ]; then

@@ -4,22 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: 'Тип релиза'
+        description: 'Release type'
         required: true
         default: 'auto'
         type: choice
         options:
-          - auto      # Автоматически определить по коммитам
-          - patch     # 0.0.1 → 0.0.2 (багфиксы)
-          - minor     # 0.1.0 → 0.2.0 (новые фичи)
+          - auto      # Automatically determine from commits
+          - patch     # 0.0.1 → 0.0.2 (bugfixes)
+          - minor     # 0.1.0 → 0.2.0 (new features)
           - major     # 1.0.0 → 2.0.0 (breaking changes)
           - prerelease # 0.1.0 → 0.1.1-beta.1
       custom_version:
-        description: 'Кастомная версия (опционально, например: 1.0.0-beta.1)'
+        description: 'Custom version (optional, e.g.: 1.0.0-beta.1)'
         required: false
         type: string
       release_notes:
-        description: 'Заметки к релизу (опционально)'
+        description: 'Release notes (optional)'
         required: false
         type: string
 
@@ -57,55 +57,55 @@ jobs:
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           
-          # Если указана кастомная версия
+          # If custom version is specified
           if [ -n "${{ github.event.inputs.custom_version }}" ]; then
             NEW_VERSION="${{ github.event.inputs.custom_version }}"
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "version_type=custom" >> $GITHUB_OUTPUT
-            echo "🎯 Используем кастомную версию: $NEW_VERSION"
+            echo "🎯 Using custom version: $NEW_VERSION"
             exit 0
           fi
           
           VERSION_TYPE="${{ github.event.inputs.version_type }}"
           
-          # Автоматическое определение типа релиза
+          # Automatic release type determination
           if [ "$VERSION_TYPE" = "auto" ]; then
-            echo "🔍 Анализируем коммиты для определения типа релиза..."
+            echo "🔍 Analyzing commits to determine release type..."
             
-            # Получаем коммиты с последнего тега
+            # Get commits since last tag
             LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
             if [ -n "$LAST_TAG" ]; then
               COMMITS=$(git log $LAST_TAG..HEAD --oneline)
-              echo "Коммиты с $LAST_TAG:"
+              echo "Commits since $LAST_TAG:"
               echo "$COMMITS"
             else
               COMMITS=$(git log --oneline)
-              echo "Все коммиты (нет предыдущих тегов):"
+              echo "All commits (no previous tags):"
               echo "$COMMITS"
             fi
             
-            # Определяем тип релиза по conventional commits
+            # Determine release type by conventional commits
             if echo "$COMMITS" | grep -qE "^[a-f0-9]+ [^:]+!:"; then
               VERSION_TYPE="major"
-              echo "🚨 Найдены breaking changes → MAJOR релиз"
+              echo "🚨 Found breaking changes → MAJOR release"
             elif echo "$COMMITS" | grep -qE "^[a-f0-9]+ feat(\(.+\))?:"; then
               VERSION_TYPE="minor"
-              echo "✨ Найдены новые фичи → MINOR релиз"
+              echo "✨ Found new features → MINOR release"
             elif echo "$COMMITS" | grep -qE "^[a-f0-9]+ fix(\(.+\))?:"; then
               VERSION_TYPE="patch"
-              echo "🐛 Найдены исправления → PATCH релиз"
+              echo "🐛 Found fixes → PATCH release"
             else
               VERSION_TYPE="patch"
-              echo "📝 Другие изменения → PATCH релиз (по умолчанию)"
+              echo "📝 Other changes → PATCH release (default)"
             fi
           fi
           
           echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
           
-          # Вычисляем новую версию
+          # Calculate new version
           IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
           
-          # Убираем возможные суффиксы из patch версии
+          # Remove possible suffixes from patch version
           patch=$(echo "$patch" | sed 's/-.*//')
           
           case $VERSION_TYPE in
@@ -119,9 +119,9 @@ jobs:
               NEW_VERSION="$major.$minor.$((patch + 1))"
               ;;
             prerelease)
-              # Для prerelease добавляем суффикс
+              # For prerelease add suffix
               if [[ "$CURRENT_VERSION" == *"-"* ]]; then
-                # Уже есть суффикс, увеличиваем номер
+                # Already has suffix, increment number
                 BASE_VERSION=$(echo "$CURRENT_VERSION" | cut -d'-' -f1)
                 SUFFIX=$(echo "$CURRENT_VERSION" | cut -d'-' -f2)
                 if [[ "$SUFFIX" == *"."* ]]; then
@@ -138,17 +138,17 @@ jobs:
           esac
           
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "🎉 Новая версия: $CURRENT_VERSION → $NEW_VERSION ($VERSION_TYPE)"
+          echo "🎉 New version: $CURRENT_VERSION → $NEW_VERSION ($VERSION_TYPE)"
 
       - name: Create and push tag
         run: |
           TAG_NAME="v${{ steps.version.outputs.new_version }}"
-          echo "🏷️ Создаем тег: $TAG_NAME"
+          echo "🏷️ Creating tag: $TAG_NAME"
           
-          # Создаем аннотированный тег
+          # Create annotated tag
           git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
           
-          # Пушим тег
+          # Push tag
           git push origin "$TAG_NAME"
           
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
@@ -156,19 +156,19 @@ jobs:
       - name: Create release branch
         run: |
           BRANCH_NAME="release/v${{ steps.version.outputs.new_version }}"
-          echo "📝 Создаем ветку: $BRANCH_NAME"
+          echo "📝 Creating branch: $BRANCH_NAME"
           
           git checkout -b "$BRANCH_NAME"
           
-          # Обновляем версии во всех пакетах
-          echo "📦 Обновляем версии пакетов..."
+          # Update versions in all packages
+          echo "📦 Updating package versions..."
           node ./scripts/update-package-versions.js ${{ steps.version.outputs.new_version }}
           
-          # Создаем коммит с обновлением версий
+          # Create commit with version updates
           git add .
           git commit -m "chore(release): bump version to ${{ steps.version.outputs.new_version }}"
           
-          # Пушим ветку
+          # Push branch
           git push origin "$BRANCH_NAME"
           
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
@@ -176,9 +176,9 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          echo "📋 Генерируем changelog..."
+          echo "📋 Generating changelog..."
           
-          # Получаем коммиты для changelog
+          # Get commits for changelog
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
           if [ -n "$LAST_TAG" ]; then
             COMMITS=$(git log $LAST_TAG..HEAD~1 --oneline --grep="^feat\|^fix\|^perf\|^refactor" --perl-regexp)
@@ -193,16 +193,16 @@ jobs:
           fi
           
           if [ -n "$COMMITS" ]; then
-            CHANGELOG="${CHANGELOG}### 📋 Изменения:\n\n"
+            CHANGELOG="${CHANGELOG}### 📋 Changes:\n\n"
             
-            # Группируем коммиты по типам
+            # Group commits by type
             FEATURES=$(echo "$COMMITS" | grep "feat:" || true)
             FIXES=$(echo "$COMMITS" | grep "fix:" || true)
             PERF=$(echo "$COMMITS" | grep "perf:" || true)
             REFACTOR=$(echo "$COMMITS" | grep "refactor:" || true)
             
             if [ -n "$FEATURES" ]; then
-              CHANGELOG="${CHANGELOG}#### ✨ Новые фичи:\n"
+              CHANGELOG="${CHANGELOG}#### ✨ New features:\n"
               echo "$FEATURES" | while read -r line; do
                 MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
                 CHANGELOG="${CHANGELOG}- $MSG\n"
@@ -211,7 +211,7 @@ jobs:
             fi
             
             if [ -n "$FIXES" ]; then
-              CHANGELOG="${CHANGELOG}#### 🐛 Исправления:\n"
+              CHANGELOG="${CHANGELOG}#### 🐛 Fixes:\n"
               echo "$FIXES" | while read -r line; do
                 MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
                 CHANGELOG="${CHANGELOG}- $MSG\n"
@@ -220,7 +220,7 @@ jobs:
             fi
             
             if [ -n "$PERF" ]; then
-              CHANGELOG="${CHANGELOG}#### ⚡ Производительность:\n"
+              CHANGELOG="${CHANGELOG}#### ⚡ Performance:\n"
               echo "$PERF" | while read -r line; do
                 MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
                 CHANGELOG="${CHANGELOG}- $MSG\n"
@@ -229,7 +229,7 @@ jobs:
             fi
             
             if [ -n "$REFACTOR" ]; then
-              CHANGELOG="${CHANGELOG}#### 🔧 Рефакторинг:\n"
+              CHANGELOG="${CHANGELOG}#### 🔧 Refactoring:\n"
               echo "$REFACTOR" | while read -r line; do
                 MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
                 CHANGELOG="${CHANGELOG}- $MSG\n"
@@ -237,25 +237,25 @@ jobs:
               CHANGELOG="${CHANGELOG}\n"
             fi
           else
-            CHANGELOG="${CHANGELOG}### 📋 Изменения:\n- Обновления и улучшения\n\n"
+            CHANGELOG="${CHANGELOG}### 📋 Changes:\n- Updates and improvements\n\n"
           fi
           
           CHANGELOG="${CHANGELOG}---\n\n"
-          CHANGELOG="${CHANGELOG}**Тип релиза:** ${{ steps.version.outputs.version_type }}\n"
-          CHANGELOG="${CHANGELOG}**Предыдущая версия:** ${{ steps.version.outputs.current_version }}\n"
-          CHANGELOG="${CHANGELOG}**Новая версия:** ${{ steps.version.outputs.new_version }}\n\n"
-          CHANGELOG="${CHANGELOG}> ⚠️ **Это draft релиз.** Он станет полноценным после мержа release ветки в master."
+          CHANGELOG="${CHANGELOG}**Release type:** ${{ steps.version.outputs.version_type }}\n"
+          CHANGELOG="${CHANGELOG}**Previous version:** ${{ steps.version.outputs.current_version }}\n"
+          CHANGELOG="${CHANGELOG}**New version:** ${{ steps.version.outputs.new_version }}\n\n"
+          CHANGELOG="${CHANGELOG}> ⚠️ **This is a draft release.** It will become full after merging the release branch into master."
           
-          # Сохраняем changelog в файл для использования в PR и Release
+          # Save changelog to file for use in PR and Release
           echo -e "$CHANGELOG" > /tmp/changelog.md
           
-          # Экранируем для GitHub Output
+          # Escape for GitHub Output
           CHANGELOG_ESCAPED=$(echo -e "$CHANGELOG" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
           echo "changelog=$CHANGELOG_ESCAPED" >> $GITHUB_OUTPUT
 
       - name: Create Draft GitHub Release
         run: |
-          echo "📝 Создаем draft GitHub Release..."
+          echo "📝 Creating draft GitHub Release..."
           
           gh release create "v${{ steps.version.outputs.new_version }}" \
             --title "🚀 Release v${{ steps.version.outputs.new_version }}" \
@@ -268,31 +268,31 @@ jobs:
           
       - name: Create Pull Request
         run: |
-          echo "🔄 Создаем Pull Request..."
+          echo "🔄 Creating Pull Request..."
           
-          # Создаем специальный changelog для PR
+          # Create special changelog for PR
           PR_CHANGELOG="## 🚀 Release v${{ steps.version.outputs.new_version }}\n\n"
-          PR_CHANGELOG="${PR_CHANGELOG}### 🎯 Что включено в релиз:\n\n"
+          PR_CHANGELOG="${PR_CHANGELOG}### 🎯 What is included in the release:\n\n"
           
           if [ -n "${{ github.event.inputs.release_notes }}" ]; then
             PR_CHANGELOG="${PR_CHANGELOG}${{ github.event.inputs.release_notes }}\n\n"
           fi
           
-          # Добавляем информацию о теге и draft release
-          PR_CHANGELOG="${PR_CHANGELOG}### 📋 Подготовка релиза:\n\n"
-          PR_CHANGELOG="${PR_CHANGELOG}- ✅ **Тег создан:** \`v${{ steps.version.outputs.new_version }}\`\n"
-          PR_CHANGELOG="${PR_CHANGELOG}- ✅ **Draft Release создан:** [v${{ steps.version.outputs.new_version }}](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }})\n"
-          PR_CHANGELOG="${PR_CHANGELOG}- ✅ **Версии обновлены** во всех пакетах\n\n"
+          # Add tag and draft release information
+          PR_CHANGELOG="${PR_CHANGELOG}### 📋 Release preparation:\n\n"
+          PR_CHANGELOG="${PR_CHANGELOG}- ✅ **Tag created:** \`v${{ steps.version.outputs.new_version }}\`\n"
+          PR_CHANGELOG="${PR_CHANGELOG}- ✅ **Draft Release created:** [v${{ steps.version.outputs.new_version }}](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }})\n"
+          PR_CHANGELOG="${PR_CHANGELOG}- ✅ **Versions updated** in all packages\n\n"
           
-          PR_CHANGELOG="${PR_CHANGELOG}### 🚀 После мержа:\n\n"
-          PR_CHANGELOG="${PR_CHANGELOG}- 🔄 **Deploy workflow** запустится автоматически\n"
-          PR_CHANGELOG="${PR_CHANGELOG}- 📦 **Пакеты** будут опубликованы в npm\n"
-          PR_CHANGELOG="${PR_CHANGELOG}- 🎉 **Draft Release** станет полноценным релизом\n\n"
+          PR_CHANGELOG="${PR_CHANGELOG}### 🚀 After merging:\n\n"
+          PR_CHANGELOG="${PR_CHANGELOG}- 🔄 **Deploy workflow** will start automatically\n"
+          PR_CHANGELOG="${PR_CHANGELOG}- 📦 **Packages** will be published to npm\n"
+          PR_CHANGELOG="${PR_CHANGELOG}- 🎉 **Draft Release** will become full release\n\n"
           
           PR_CHANGELOG="${PR_CHANGELOG}---\n\n"
-          PR_CHANGELOG="${PR_CHANGELOG}**Тип релиза:** ${{ steps.version.outputs.version_type }}\n"
-          PR_CHANGELOG="${PR_CHANGELOG}**Предыдущая версия:** ${{ steps.version.outputs.current_version }}\n"
-          PR_CHANGELOG="${PR_CHANGELOG}**Новая версия:** ${{ steps.version.outputs.new_version }}"
+          PR_CHANGELOG="${PR_CHANGELOG}**Release type:** ${{ steps.version.outputs.version_type }}\n"
+          PR_CHANGELOG="${PR_CHANGELOG}**Previous version:** ${{ steps.version.outputs.current_version }}\n"
+          PR_CHANGELOG="${PR_CHANGELOG}**New version:** ${{ steps.version.outputs.new_version }}"
           
           echo -e "$PR_CHANGELOG" > /tmp/pr_changelog.md
           
@@ -307,21 +307,21 @@ jobs:
           
       - name: Summary
         run: |
-          echo "## 🎉 Release подготовлен!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Release prepared!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Что создано:" >> $GITHUB_STEP_SUMMARY
-          echo "- **🏷️ Тег:** \`v${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 What is created:" >> $GITHUB_STEP_SUMMARY
+          echo "- **🏷️ Tag:** \`v${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **📝 Draft Release:** [v${{ steps.version.outputs.new_version }}](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **🌿 Release ветка:** \`release/v${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **🔄 Pull Request:** Создан автоматически" >> $GITHUB_STEP_SUMMARY
+          echo "- **🌿 Release branch:** \`release/v${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **🔄 Pull Request:** Created automatically" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 Детали релиза:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Версия:** \`${{ steps.version.outputs.current_version }}\` → \`${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Тип:** \`${{ steps.version.outputs.version_type }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Release details:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${{ steps.version.outputs.current_version }}\` → \`${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type:** \`${{ steps.version.outputs.version_type }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Следующие шаги:" >> $GITHUB_STEP_SUMMARY
-          echo "1. 👀 Проверьте созданный Pull Request" >> $GITHUB_STEP_SUMMARY
-          echo "2. ⏳ Дождитесь прохождения CI проверок" >> $GITHUB_STEP_SUMMARY
-          echo "3. 🔍 Сделайте code review" >> $GITHUB_STEP_SUMMARY
-          echo "4. ✅ Смержите PR для автоматического деплоя" >> $GITHUB_STEP_SUMMARY
-          echo "5. 🎉 Draft Release автоматически станет полноценным!" >> $GITHUB_STEP_SUMMARY 
+          echo "### 📋 Next steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. 👀 Check the created Pull Request" >> $GITHUB_STEP_SUMMARY
+          echo "2. ⏳ Wait for CI checks to pass" >> $GITHUB_STEP_SUMMARY
+          echo "3. 🔍 Make code review" >> $GITHUB_STEP_SUMMARY
+          echo "4. ✅ Merge PR for automatic deployment" >> $GITHUB_STEP_SUMMARY
+          echo "5. 🎉 Draft Release automatically becomes full!" >> $GITHUB_STEP_SUMMARY 

@@ -1,18 +1,18 @@
 name: CI
 
 on:
-  # Pull requests в master и release ветки
+  # Pull requests to master and release branches
   pull_request:
     branches: 
       - master
       - 'release/v*'
   
-  # Push в master (release ветки обрабатываются отдельно)
+  # Push to master (release branches are handled separately)
   push:
     branches: 
       - master
 
-  # Возможность запуска вручную
+  # Manual trigger option
   workflow_dispatch:
 
 permissions:
@@ -21,7 +21,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Определяем какие файлы изменились
+  # Determine which files changed
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -49,7 +49,7 @@ jobs:
               - '**/*.md'
               - 'examples/**'
 
-  # Основные тесты
+  # Main tests
   test:
     needs: changes
     if: needs.changes.outputs.packages == 'true'
@@ -93,7 +93,7 @@ jobs:
       - name: Check TypeScript compilation
         run: npm run check-compatibility
 
-  # Проверка сборки
+  # Build check
   build:
     needs: changes
     if: needs.changes.outputs.packages == 'true'
@@ -124,7 +124,7 @@ jobs:
             packages/*/lib/
           retention-days: 7
 
-  # Проверка безопасности
+  # Security check
   security:
     needs: changes
     if: needs.changes.outputs.packages == 'true'
@@ -151,7 +151,7 @@ jobs:
         run: npx audit-ci --config .audit-ci.json
         continue-on-error: true
 
-  # Проверка coverage (только для PR)
+  # Coverage check (only for PR)
   coverage:
     needs: changes
     if: github.event_name == 'pull_request' && needs.changes.outputs.packages == 'true'
@@ -180,7 +180,7 @@ jobs:
           flags: unittests
           name: codecov-umbrella
 
-  # Итоговая проверка
+  # Final check
   ci-success:
     needs: [changes, test, build, security]
     if: always()
@@ -194,13 +194,13 @@ jobs:
           echo "Build result: ${{ needs.build.result }}"
           echo "Security result: ${{ needs.security.result }}"
           
-          # Если пакеты не изменились, все джобы должны быть пропущены
+          # If packages didn't change, all jobs should be skipped
           if [[ "${{ needs.changes.outputs.packages }}" == "false" ]]; then
             echo "No package changes detected - all jobs skipped as expected"
             exit 0
           fi
           
-          # Если пакеты изменились, проверяем результаты
+          # If packages changed, check results
           if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.security.result }}" == "failure" ]]; then
             echo "One or more jobs failed"
             exit 1
@@ -208,7 +208,7 @@ jobs:
           
           echo "All jobs passed successfully"
 
-  # Уведомления (опционально)
+  # Notifications (optional)
   notify:
     needs: [changes, test, build, security]
     if: always() && needs.changes.outputs.packages == 'true' && (needs.test.result == 'failure' || needs.build.result == 'failure' || needs.security.result == 'failure') && github.event_name == 'pull_request'
