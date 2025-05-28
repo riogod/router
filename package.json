@@ -15,7 +15,9 @@
     "check-compatibility": "node scripts/check-node-compatibility.js",
     "release": "release-it",
     "audit:security": "npm audit --audit-level=high",
-    "audit:ci": "npx audit-ci --config .audit-ci.json"
+    "audit:ci": "npx audit-ci --config .audit-ci.json",
+    "changelog": "node scripts/generate-changelog.js",
+    "changelog:all": "INCLUDE_ALL=true node scripts/generate-changelog.js"
   },
   "lint-staged": {
     "packages/**/*.{js,ts}": [

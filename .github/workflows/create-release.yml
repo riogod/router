@@ -164,9 +164,18 @@ jobs:
           echo "📦 Updating package versions..."
           node ./scripts/update-package-versions.js ${{ steps.version.outputs.new_version }}
           
-          # Create commit with version updates
+          # Update CHANGELOG.md
+          echo "📋 Updating CHANGELOG.md..."
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }} $LAST_TAG
+          else
+            node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }}
+          fi
+          
+          # Create commit with version updates and changelog
           git add .
-          git commit -m "chore(release): bump version to ${{ steps.version.outputs.new_version }}"
+          git commit -m "chore(release): bump version to ${{ steps.version.outputs.new_version }} and update changelog"
           
           # Push branch
           git push origin "$BRANCH_NAME"
@@ -178,80 +187,42 @@ jobs:
         run: |
           echo "📋 Generating changelog..."
           
-          # Get commits for changelog
+          # Get last tag for comparison
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          
+          # Generate changelog using our advanced script
           if [ -n "$LAST_TAG" ]; then
-            COMMITS=$(git log $LAST_TAG..HEAD~1 --oneline --grep="^feat\|^fix\|^perf\|^refactor" --perl-regexp)
+            echo "📊 Generating changelog from $LAST_TAG to current version..."
+            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }} $LAST_TAG)
           else
-            COMMITS=$(git log --oneline --grep="^feat\|^fix\|^perf\|^refactor" --perl-regexp | head -20)
+            echo "📊 Generating changelog for first release..."
+            CHANGELOG_CONTENT=$(node scripts/generate-changelog.js ${{ steps.version.outputs.new_version }})
           fi
           
-          CHANGELOG="## 🚀 Release v${{ steps.version.outputs.new_version }}\n\n"
-          
+          # Add custom release notes if provided
           if [ -n "${{ github.event.inputs.release_notes }}" ]; then
-            CHANGELOG="${CHANGELOG}${{ github.event.inputs.release_notes }}\n\n"
-          fi
-          
-          if [ -n "$COMMITS" ]; then
-            CHANGELOG="${CHANGELOG}### 📋 Changes:\n\n"
-            
-            # Group commits by type
-            FEATURES=$(echo "$COMMITS" | grep "feat:" || true)
-            FIXES=$(echo "$COMMITS" | grep "fix:" || true)
-            PERF=$(echo "$COMMITS" | grep "perf:" || true)
-            REFACTOR=$(echo "$COMMITS" | grep "refactor:" || true)
-            
-            if [ -n "$FEATURES" ]; then
-              CHANGELOG="${CHANGELOG}#### ✨ New features:\n"
-              echo "$FEATURES" | while read -r line; do
-                MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
-                CHANGELOG="${CHANGELOG}- $MSG\n"
-              done
-              CHANGELOG="${CHANGELOG}\n"
-            fi
-            
-            if [ -n "$FIXES" ]; then
-              CHANGELOG="${CHANGELOG}#### 🐛 Fixes:\n"
-              echo "$FIXES" | while read -r line; do
-                MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
-                CHANGELOG="${CHANGELOG}- $MSG\n"
-              done
-              CHANGELOG="${CHANGELOG}\n"
-            fi
-            
-            if [ -n "$PERF" ]; then
-              CHANGELOG="${CHANGELOG}#### ⚡ Performance:\n"
-              echo "$PERF" | while read -r line; do
-                MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
-                CHANGELOG="${CHANGELOG}- $MSG\n"
-              done
-              CHANGELOG="${CHANGELOG}\n"
-            fi
-            
-            if [ -n "$REFACTOR" ]; then
-              CHANGELOG="${CHANGELOG}#### 🔧 Refactoring:\n"
-              echo "$REFACTOR" | while read -r line; do
-                MSG=$(echo "$line" | sed 's/^[a-f0-9]* //')
-                CHANGELOG="${CHANGELOG}- $MSG\n"
-              done
-              CHANGELOG="${CHANGELOG}\n"
-            fi
+            RELEASE_NOTES="## 🚀 Release v${{ steps.version.outputs.new_version }}\n\n"
+            RELEASE_NOTES="${RELEASE_NOTES}${{ github.event.inputs.release_notes }}\n\n"
+            RELEASE_NOTES="${RELEASE_NOTES}${CHANGELOG_CONTENT}"
           else
-            CHANGELOG="${CHANGELOG}### 📋 Changes:\n- Updates and improvements\n\n"
+            RELEASE_NOTES="$CHANGELOG_CONTENT"
           fi
           
-          CHANGELOG="${CHANGELOG}---\n\n"
-          CHANGELOG="${CHANGELOG}**Release type:** ${{ steps.version.outputs.version_type }}\n"
-          CHANGELOG="${CHANGELOG}**Previous version:** ${{ steps.version.outputs.current_version }}\n"
-          CHANGELOG="${CHANGELOG}**New version:** ${{ steps.version.outputs.new_version }}\n\n"
-          CHANGELOG="${CHANGELOG}> ⚠️ **This is a draft release.** It will become full after merging the release branch into master."
+          # Add release metadata
+          RELEASE_NOTES="${RELEASE_NOTES}\n\n---\n\n"
+          RELEASE_NOTES="${RELEASE_NOTES}**Release type:** ${{ steps.version.outputs.version_type }}\n"
+          RELEASE_NOTES="${RELEASE_NOTES}**Previous version:** ${{ steps.version.outputs.current_version }}\n"
+          RELEASE_NOTES="${RELEASE_NOTES}**New version:** ${{ steps.version.outputs.new_version }}\n\n"
+          RELEASE_NOTES="${RELEASE_NOTES}> ⚠️ **This is a draft release.** It will become full after merging the release branch into master."
           
           # Save changelog to file for use in PR and Release
-          echo -e "$CHANGELOG" > /tmp/changelog.md
+          echo -e "$RELEASE_NOTES" > /tmp/changelog.md
           
           # Escape for GitHub Output
-          CHANGELOG_ESCAPED=$(echo -e "$CHANGELOG" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
+          CHANGELOG_ESCAPED=$(echo -e "$RELEASE_NOTES" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
           echo "changelog=$CHANGELOG_ESCAPED" >> $GITHUB_OUTPUT
+          
+          echo "✅ Advanced changelog generated successfully"
 
       - name: Create Draft GitHub Release
         run: |
