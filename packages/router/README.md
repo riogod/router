@@ -210,3 +210,7 @@ This is a test change for release v0.0.7 to verify the deploy workflow works cor
 ## Release v0.0.8 Test
 
 This is a test change for release v0.0.8 to verify the deploy workflow works correctly with modern GitHub Release action.
+
+## Release v0.0.9 Test
+
+This is a test change for release v0.0.9 to debug deploy workflow and see what commit message is received.
