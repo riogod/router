@@ -43,6 +43,13 @@ jobs:
           IS_RELEASE_MERGE="false"
           TARGET_VERSION=""
           
+          # Отладочная информация
+          echo "=== DEBUG INFO ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Head commit message: '$MERGE_COMMIT_MSG'"
+          echo "Head commit SHA: ${{ github.event.head_commit.id }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "=================="
           
           # Проверяем паттерн merge commit из release ветки (включая суффиксы)
           if echo "$MERGE_COMMIT_MSG" | grep -qE "Merge pull request .* from .*/release/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?"; then

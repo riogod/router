@@ -180,27 +180,38 @@ jobs:
           flags: unittests
           name: codecov-umbrella
 
-
-
   # Итоговая проверка
   ci-success:
-    needs: [test, build, security]
+    needs: [changes, test, build, security]
     if: always()
     runs-on: ubuntu-latest
     
     steps:
       - name: Check all jobs status
         run: |
+          echo "Changes output: ${{ needs.changes.outputs.packages }}"
+          echo "Test result: ${{ needs.test.result }}"
+          echo "Build result: ${{ needs.build.result }}"
+          echo "Security result: ${{ needs.security.result }}"
+          
+          # Если пакеты не изменились, все джобы должны быть пропущены
+          if [[ "${{ needs.changes.outputs.packages }}" == "false" ]]; then
+            echo "No package changes detected - all jobs skipped as expected"
+            exit 0
+          fi
+          
+          # Если пакеты изменились, проверяем результаты
           if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.security.result }}" == "failure" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi
+          
           echo "All jobs passed successfully"
 
   # Уведомления (опционально)
   notify:
-    needs: [test, build, security]
-    if: always() && (needs.test.result == 'failure' || needs.build.result == 'failure' || needs.security.result == 'failure') && github.event_name == 'pull_request'
+    needs: [changes, test, build, security]
+    if: always() && needs.changes.outputs.packages == 'true' && (needs.test.result == 'failure' || needs.build.result == 'failure' || needs.security.result == 'failure') && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       issues: write

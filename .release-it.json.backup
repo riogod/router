@@ -1,13 +1,12 @@
 {
   "git": {
-    "commit": false,
-    "tag": true,
-    "push": true,
+    "commitMessage": "chore(release): release ${version}",
     "tagName": "v${version}",
     "requireCleanWorkingDir": false
   },
   "npm": {
-    "publish": false
+    "publish": false,
+    "increment": false
   },
   "github": {
     "release": true,
@@ -20,7 +19,7 @@
     }
   },
   "hooks": {
-    "before:bump": [],
+    "before:bump": ["node ./scripts/update-package-versions.js ${version}"],
     "after:bump": ["node ./scripts/publish-packages.js"]
   }
 } 
