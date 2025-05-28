@@ -2,6 +2,13 @@
 
 
 
+
+## [0.0.15](https://github.com/riogod/router/compare/v0.0.14...v0.0.15) (2025-05-28)
+
+### 🐛 Bug Fixes
+
+- **deploy**: add support for chore(release) commit format in deploy workflow - Add pattern to recognize 'chore(release): bump version to X.X.X' commits - Update regex to extract version numbers without 'v' prefix - Improve version extraction for release commits - Ensures automatic deployment triggers for release commits - Fixes deployment issue where release commits were not recognized ([d4a49db](https://github.com/riogod/router/commit/d4a49db7d61d13b56d204ba86d98f2c3426b2f4d))
+
 ## [0.0.14](https://github.com/riogod/router/compare/v0.0.13...v0.0.14) (2025-05-28)
 
 ### ✨ Features
