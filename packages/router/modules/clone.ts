@@ -35,7 +35,7 @@ export default function cloneRouter<
     Dependencies extends DefaultDependencies = DefaultDependencies
 >(router: Router, dependencies?: Dependencies): Router<Dependencies> {
     const clonedRouter = createRouter<Dependencies>(
-        router.rootNode,
+        router.rootNode.clone(),
         router.getOptions(),
         dependencies
     )

@@ -192,6 +192,53 @@ export class RouteNode {
     this.children.forEach(child => child.sortDescendants())
   }
 
+  /**
+   * Creates a deep clone of this RouteNode and all its children.
+   * The cloned node will have the same structure but be completely independent.
+   * 
+   * @returns A new RouteNode instance that is a deep copy of this node
+   */
+  public clone(): RouteNode {
+    // Convert children to route definitions for reconstruction
+    const childRoutes: RouteDefinition[] = this.children.map(child => ({
+      name: child.name,
+      path: child.absolute ? `~${child.path}` : child.path,
+      children: child.children.map(grandchild => ({
+        name: grandchild.name,
+        path: grandchild.absolute ? `~${grandchild.path}` : grandchild.path,
+        // Recursively convert all descendants
+        ...this.convertNodeToDefinition(grandchild)
+      }))
+    }))
+
+    // Create new RouteNode with same properties but no parent
+    const clonedNode = new RouteNode(
+      this.name,
+      this.absolute ? `~${this.path}` : this.path,
+      childRoutes,
+      { finalSort: true }
+    )
+
+    return clonedNode
+  }
+
+  /**
+   * Helper method to recursively convert a RouteNode to a RouteDefinition
+   * @private
+   */
+  private convertNodeToDefinition(node: RouteNode): RouteDefinition {
+    const definition: RouteDefinition = {
+      name: node.name,
+      path: node.absolute ? `~${node.path}` : node.path
+    }
+
+    if (node.children.length > 0) {
+      definition.children = node.children.map(child => this.convertNodeToDefinition(child))
+    }
+
+    return definition
+  }
+
   public buildPath(
     routeName: string,
     params: Record<string, any> = {},
