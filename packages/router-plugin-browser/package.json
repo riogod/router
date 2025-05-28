@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-plugin-browser",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Browser plugin for @riogz/router integration with browser history",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -25,10 +25,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@riogz/router": "^0.0.13"
+    "@riogz/router": "^0.0.14"
   },
   "peerDependencies": {
-    "@riogz/router": "^0.0.13"
+    "@riogz/router": "^0.0.14"
   },
   "homepage": "https://github.com/riogod/router/tree/master/packages/router-plugin-browser",
   "publishConfig": {
