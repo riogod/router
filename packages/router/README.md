@@ -193,7 +193,7 @@ MIT © [Vyacheslav Krasnyanskiy](https://github.com/riogod)
 - Создайте feature ветку от правильной base ветки
 - Внесите изменения и добавьте тесты
 - Создайте PR в соответствующую target ветку
-- Большинство PR идут в `release/vX.Y.Z`
+- Большинство PR идут в `master`, hotfix - в `release/vX.Y.Z`
 
 ## 🔗 Links
 
@@ -201,16 +201,4 @@ MIT © [Vyacheslav Krasnyanskiy](https://github.com/riogod)
 - [Issues](https://github.com/riogod/router/issues)
 - [Contributing Guide](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
-// Trigger CI tests
-
-## Release v0.0.7 Test
-
-This is a test change for release v0.0.7 to verify the deploy workflow works correctly with proper merge commits.
-
-## Release v0.0.8 Test
-
-This is a test change for release v0.0.8 to verify the deploy workflow works correctly with modern GitHub Release action.
-
-## Release v0.0.9 Test
-
-This is a test change for release v0.0.9 to debug deploy workflow and see what commit message is received.
+# Release v0.0.10 - Исправления release-it конфигурации
