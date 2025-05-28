@@ -59,15 +59,16 @@ const test = (route: State | string, regex: RegExp): boolean => {
 }
 
 /**
- * Normalizes a route segment by escaping dots for use in regular expressions.
- * This ensures that dots in route names are treated as literal characters
- * rather than regex wildcards.
+ * Normalizes a route segment by escaping special regex characters.
+ * This ensures that special characters in route names are treated as literal characters
+ * rather than regex metacharacters.
  * 
  * @param name - The route segment name to normalize
- * @returns The normalized segment with escaped dots
+ * @returns The normalized segment with escaped special characters
  */
 const normaliseSegment = (name: string): string => {
-    return name.replace(/\./g, '\\.')
+    // Escape all regex special characters: \ ^ $ . | ? * + ( ) [ ] { }
+    return name.replace(/[\\^$.|?*+()[\]{}]/g, '\\$&')
 }
 
 /** Cache for compiled regular expressions to improve performance */
