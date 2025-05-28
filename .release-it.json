@@ -5,8 +5,7 @@
     "requireCleanWorkingDir": false
   },
   "npm": {
-    "publish": false,
-    "increment": false
+    "publish": false
   },
   "github": {
     "release": true,
