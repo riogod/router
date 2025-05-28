@@ -27,6 +27,31 @@ describe('router-helpers', function() {
             expect(helpers.startsWithSegment({ name: null } as any)('a')).toBe(false)
             expect(helpers.startsWithSegment({ name: undefined } as any, 'a')).toBe(false)
         })
+
+        it('should properly escape special regex characters in segments', function() {
+            // Test with backslashes
+            expect(helpers.startsWithSegment('a\\b.c', 'a\\b')).toBe(true)
+            expect(helpers.startsWithSegment('a\\b.c', 'a.b')).toBe(false)
+            
+            // Test with other special regex characters
+            expect(helpers.startsWithSegment('a$.b', 'a$')).toBe(true)
+            expect(helpers.startsWithSegment('a^.b', 'a^')).toBe(true)
+            expect(helpers.startsWithSegment('a*.b', 'a*')).toBe(true)
+            expect(helpers.startsWithSegment('a+.b', 'a+')).toBe(true)
+            expect(helpers.startsWithSegment('a?.b', 'a?')).toBe(true)
+            expect(helpers.startsWithSegment('a|.b', 'a|')).toBe(true)
+            expect(helpers.startsWithSegment('a(.b', 'a(')).toBe(true)
+            expect(helpers.startsWithSegment('a).b', 'a)')).toBe(true)
+            expect(helpers.startsWithSegment('a[.b', 'a[')).toBe(true)
+            expect(helpers.startsWithSegment('a].b', 'a]')).toBe(true)
+            expect(helpers.startsWithSegment('a{.b', 'a{')).toBe(true)
+            expect(helpers.startsWithSegment('a}.b', 'a}')).toBe(true)
+            
+            // Test that these don't match as regex patterns
+            expect(helpers.startsWithSegment('abc', 'a*')).toBe(false) // * should not match any character
+            expect(helpers.startsWithSegment('abc', 'a+')).toBe(false) // + should not match any character
+            expect(helpers.startsWithSegment('abc', 'a?')).toBe(false) // ? should not match any character
+        })
     })
 
     describe('.endsWithSegment()', function() {
