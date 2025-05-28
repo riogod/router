@@ -299,8 +299,6 @@ jobs:
           gh pr create \
             --title "🚀 Release v${{ steps.version.outputs.new_version }}" \
             --body-file /tmp/pr_changelog.md \
-            --label "release" \
-            --label "${{ steps.version.outputs.version_type }}" \
             --assignee "${{ github.actor }}"
             
         env:
