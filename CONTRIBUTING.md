@@ -1,273 +1,320 @@
 # Contributing to @riogz/router
 
-Спасибо за интерес к проекту! Мы рады любому вкладу в развитие роутера.
+Thank you for your interest in the project! We welcome any contributions to the development of the router.
 
-## 🚀 Быстрый старт для контрибьюторов
+## 🚀 Quick Start for Contributors
 
-### Правила для контрибьюторов: **Выбирайте правильную target ветку**
+### Rule for Contributors: **Choose the correct target branch**
 
-Как контрибьютор, вам нужно понимать, куда направлять ваши изменения:
+As a contributor, you need to understand where to direct your changes:
 
-### 🎯 Куда создавать PR:
+### 🎯 Where to create a PR:
 
-#### ✅ **В `master`** (для большинства случаев):
-- Исправления багов
-- Новые функции для следующего релиза
-- Улучшения документации
-- Рефакторинг
-- Обновления зависимостей
+#### ✅ **To `master`** (for most cases):
+- Bug fixes
+- New features for the next release
+- Documentation improvements
+- Refactoring
+- Dependency updates
 
-#### 🎯 **В `release/vX.Y.Z`** (для срочных исправлений):
-- Критические баги в текущем релизе
-- Hotfix для production
-- Только после согласования с мейнтейнерами
+#### 🎯 **To `release/vX.Y.Z`** (for urgent fixes):
+- Critical bugs in the current release
+- Hotfixes for production
+- Only after agreement with maintainers
 
-### 📋 Процесс разработки:
+### 📋 Development Process:
 
 ```bash
-# 1. Форкните репозиторий
-# 2. Клонируйте свой форк
+# 1. Fork the repository
+# 2. Clone your fork
 git clone https://github.com/YOUR_USERNAME/router.git
 cd router
 
-# 3. Определите target ветку и создайте feature ветку
-# Для обычных изменений:
+# 3. Determine the target branch and create a feature branch
+# For regular changes:
 git checkout master
 git pull upstream master
 git checkout -b feature/your-feature-name
 
-# Для hotfix (только после согласования):
+# For hotfixes (only after agreement):
 git checkout release/vX.Y.Z
 git pull upstream release/vX.Y.Z
 git checkout -b hotfix/critical-bug-fix
 
-# 4. Внесите изменения и протестируйте
+# 4. Make changes and test
 npm install
 npm test
 npm run lint
 npm run build
 
-# 5. Закоммитьте изменения
+# 5. Commit your changes
 git add .
 git commit -m "feat: add your awesome feature"
 
-# 6. Запушьте в свой форк
+# 6. Push to your fork
 git push origin feature/your-feature-name
 
-# 7. Создайте PR в правильную target ветку
+# 7. Create a PR to the correct target branch
 ```
 
-## 📝 Типы изменений и коммитов
+## 📝 Types of Changes and Commits
 
-Используйте [Conventional Commits](https://www.conventionalcommits.org/) для описания ваших изменений:
+Use [Conventional Commits](https://www.conventionalcommits.org/) to describe your changes:
 
-### 🐛 Исправления багов
+### 🐛 Bug Fixes
 ```bash
 git commit -m "fix: resolve navigation issue in nested routes"
 ```
 
-### ✨ Новые функции
+### ✨ New Features
 ```bash
 git commit -m "feat: add support for query parameters validation"
 ```
 
-### 💥 Breaking changes
+### 💥 Breaking Changes
 ```bash
 git commit -m "feat!: change router API to support async routes"
-# или
+# or
 git commit -m "feat: change router API
 
 BREAKING CHANGE: Router.navigate now returns a Promise"
 ```
 
-### 📚 Документация
+### 📚 Documentation
 ```bash
 git commit -m "docs: update README with new examples"
 ```
 
-### 🧪 Тесты
+### 🧪 Tests
 ```bash
 git commit -m "test: add tests for route matching"
 ```
 
-### 🔧 Рефакторинг
+### 🔧 Refactoring
 ```bash
 git commit -m "refactor: simplify path parsing logic"
 ```
 
-## 🧪 Тестирование
+## 🧪 Testing
 
-Перед созданием PR убедитесь, что:
+Before creating a PR, ensure that:
 
 ```bash
-# Все тесты проходят
+# All tests pass
 npm test
 
-# Нет ошибок линтинга
+# No linting errors
 npm run lint
 
-# TypeScript компилируется без ошибок
+# TypeScript compiles without errors
 npm run type-check
 
-# Проект собирается
+# The project builds
 npm run build
 
-# Примеры работают
+# Examples work
 cd examples/react-router-demo
 npm install
 npm run build
 ```
 
-## 📋 Чек-лист для PR
+### ✍️ Writing Tests
 
-### Перед созданием PR:
-- [ ] Код следует стилю проекта (проверьте `npm run lint`)
-- [ ] Добавлены тесты для новой функциональности
-- [ ] Все существующие тесты проходят (`npm test`)
-- [ ] TypeScript компилируется без ошибок (`npm run type-check`)
-- [ ] Проект собирается (`npm run build`)
-- [ ] Обновлена документация (если необходимо)
-- [ ] Использованы conventional commits
+Comprehensive tests are crucial for maintaining the quality and stability of `@riogz/router`. We use [Jest](https://jestjs.io/) as our testing framework.
 
-### При создании PR:
-- [ ] **Выбрана правильная target ветка** (`master` или `release/vX.Y.Z`)
-- [ ] Заполнено описание PR с объяснением изменений
-- [ ] Добавлены соответствующие лейблы
-- [ ] Для hotfix: получено одобрение мейнтейнеров
+**General Guidelines:**
 
-## 🔄 Что происходит после создания PR
+*   **Importance**: Every new feature should be accompanied by tests. Bug fixes should also include tests that demonstrate the issue and verify the fix.
+*   **Coverage**: Aim for high test coverage. You can check coverage by running `npm run test:coverage`.
+*   **Location**: Tests are typically located in `__tests__` subdirectories within the respective module\'s folder (e.g., `packages/router/modules/__tests__`). Test files should be named with a `.test.ts` or `.spec.ts` extension (e.g., `createRouter.test.ts`).
+*   **Clarity**: Write clear and descriptive test names. The test description should make it obvious what is being tested.
+    *   ✅ `it('should navigate to the correct route with params', () => { /* ... */ });`
+    *   ❌ `it('test navigation', () => { /* ... */ });`
+*   **Isolation**: Each test case should be isolated and test a specific scenario or unit of behavior. Avoid testing multiple unrelated things in a single test.
+*   **Public API Focus**: Prioritize testing the public API and observable behavior of modules and functions rather than internal implementation details. This makes tests less brittle to refactoring.
+*   **Edge Cases**: Don\'t forget to test edge cases, error conditions, and invalid inputs.
+*   **Reliability**: Ensure your tests are reliable and not flaky. Avoid dependencies on external services or timing issues where possible.
+*   **Examples**: Look at existing tests within the codebase for examples of how to structure your tests.
 
-1. **Автоматические проверки**: GitHub Actions запустит тесты на Node.js 16, 18, 20
-2. **Code Review**: Мейнтейнеры проверят ваш код
-3. **Обратная связь**: Возможно, потребуются изменения
-4. **Мерж**: После одобрения PR будет смержен в master
-5. **Автоматический релиз**: Ваши изменения попадут в следующий релиз
+**What to Test:**
 
-## 🎯 Детальное руководство по target веткам
+For a routing library, common things to test include:
 
-### ✅ **В `master`** (90% случаев):
-- 🐛 Исправления багов для следующего релиза
-- ✨ Новые функции
-- 📚 Улучшения документации
-- 🔧 Рефакторинг
-- ⬆️ Обновления зависимостей
-- 🧪 Добавление тестов
+*   Route matching (simple paths, paths with params, query params, wildcards).
+*   Navigation to routes (`router.navigate()`).
+*   Correct state updates after navigation (`router.getState()`, subscriptions).
+*   Route guards (`canActivate`, `canDeactivate`).
+*   Middleware functionality.
+*   Plugin interactions (if applicable to your changes).
+*   Path building (`router.buildPath()`).
+*   Options and their effects on router behavior.
+*   Error handling and lifecycle events.
 
-### 🎯 **В `release/vX.Y.Z`** (только для критичных случаев):
-- 🚨 Критические баги, блокирующие production
-- 🔒 Уязвимости безопасности
-- 📦 Исправления сборки/деплоя
-- **⚠️ Требует предварительного согласования с мейнтейнерами**
+**Running Tests:**
 
-### ❌ **НЕ создавайте PR в:**
-- Старые release ветки (`release/v1.0.0` если текущая `v1.2.0`)
-- Теги или коммиты
-- Чужие feature ветки
+*   `npm test`: Run all tests.
+*   `npm test:watch`: Run tests in watch mode, re-running on file changes.
+*   `npm test:coverage`: Run tests and generate a coverage report.
+*   You can also run tests for specific files by providing a pattern: `jest packages/router/modules/createRouter.test.ts`
 
-## 🚨 Когда нужен hotfix в release ветку?
+By following these guidelines, you can help us ensure that `@riogz/router` remains a robust and reliable routing solution.
 
-### Критерии для hotfix:
-- 🔥 **Критический баг** - приложение не работает или работает неправильно
-- 🔒 **Уязвимость безопасности** - обнаружена серьезная проблема безопасности  
-- 📦 **Проблема сборки** - пакет не устанавливается или не собирается
-- 💥 **Регрессия** - новая версия сломала существующую функциональность
+## 📋 PR Checklist
 
-### Процесс согласования hotfix:
-1. **Создайте Issue** с описанием проблемы и пометкой `critical`
-2. **Дождитесь ответа** мейнтейнеров (обычно в течение 24 часов)
-3. **Получите одобрение** на создание hotfix PR
-4. **Создайте PR** в соответствующую `release/vX.Y.Z` ветку
+### Before creating a PR:
+- [ ] Code follows the project style (check `npm run lint`)
+- [ ] Tests added for new functionality
+- [ ] All existing tests pass (`npm test`)
+- [ ] TypeScript compiles without errors (`npm run type-check`)
+- [ ] The project builds (`npm run build`)
+- [ ] Documentation updated (if necessary)
+- [ ] Conventional commits are used
 
-## 🤝 Взаимодействие с мейнтейнерами
+### When creating a PR:
+- [ ] **Correct target branch is selected** (`master` or `release/vX.Y.Z`)
+- [ ] PR description filled out with an explanation of changes
+- [ ] Appropriate labels added
+- [ ] For hotfixes: maintainer approval obtained
 
-### Если ваше изменение критично:
-Укажите в описании PR:
+## 🔄 What happens after creating a PR
+
+1.  **Automatic Checks**: GitHub Actions will run tests on Node.js 16, 18, 20
+2.  **Code Review**: Maintainers will review your code
+3.  **Feedback**: Changes may be requested
+4.  **Merge**: After approval, the PR will be merged into `master`
+5.  **Automatic Release**: Your changes will be included in the next release
+
+## 🎯 Detailed Guide to Target Branches
+
+### ✅ **To `master`** (90% of cases):
+- 🐛 Bug fixes for the next release
+- ✨ New features
+- 📚 Documentation improvements
+- 🔧 Refactoring
+- ⬆️ Dependency updates
+- 🧪 Adding tests
+
+### 🎯 **To `release/vX.Y.Z`** (only for critical cases):
+- 🚨 Critical bugs blocking production
+- 🔒 Security vulnerabilities
+- 📦 Build/deploy fixes
+- **⚠️ Requires prior agreement with maintainers**
+
+### ❌ **DO NOT create PRs to:**
+- Old release branches (`release/v1.0.0` if current is `v1.2.0`)
+- Tags or commits
+- Others\' feature branches
+
+## 🚨 When is a hotfix to a release branch needed?
+
+### Criteria for a hotfix:
+- 🔥 **Critical bug** - the application does not work or works incorrectly
+- 🔒 **Security vulnerability** - a serious security issue has been discovered
+- 📦 **Build issue** - the package does not install or build
+- 💥 **Regression** - a new version broke existing functionality
+
+### Hotfix approval process:
+1.  **Create an Issue** describing the problem and mark it as `critical`
+2.  **Wait for a response** from maintainers (usually within 24 hours)
+3.  **Get approval** to create a hotfix PR
+4.  **Create a PR** to the corresponding `release/vX.Y.Z` branch
+
+## 🤝 Interacting with Maintainers
+
+### If your change is critical:
+Indicate in the PR description:
 ```markdown
-## 🚨 Критичность
-Это исправление критического бага, который блокирует пользователей.
+## 🚨 Criticality
+This is a fix for a critical bug that is blocking users.
 
-**Проблема:** Описание проблемы
-**Влияние:** Кого это затрагивает
-**Решение:** Краткое описание исправления
+**Problem:** Description of the problem
+**Impact:** Who it affects
+**Solution:** Brief description of the fix
 
-Предлагаю включить в ближайший patch релиз.
+Propose to include in the next patch release.
 ```
 
-### Если это breaking change:
+### If it\'s a breaking change:
 ```markdown
 ## Breaking Change
-⚠️ Это изменение ломает обратную совместимость.
+⚠️ This change breaks backward compatibility.
 
-**Что изменилось:**
-- API метод `navigate()` теперь возвращает Promise
-- Удален устаревший метод `goTo()`
+**What changed:**
+- API method `navigate()` now returns a Promise
+- Removed deprecated method `goTo()`
 
-**Миграция:**
+**Migration:**
 \`\`\`javascript
-// Было
-router.navigate('/path')
+// Was
+router.navigate(\'/path\')
 
-// Стало
-await router.navigate('/path')
+// Now
+await router.navigate(\'/path\')
 \`\`\`
 ```
 
-## 🐛 Сообщение о багах
+## 🐛 Reporting Bugs
 
-Используйте [GitHub Issues](https://github.com/riogod/router/issues) для:
-- Сообщений о багах
-- Предложений новых функций
-- Вопросов по использованию
+Use [GitHub Issues](https://github.com/riogod/router/issues) for:
+- Bug reports
+- New feature proposals
+- Usage questions
 
-### Шаблон для бага:
+### Bug report template:
 ```markdown
-## Описание
-Краткое описание проблемы
+## Description
+A clear and concise description of what the bug is.
 
-## Воспроизведение
-1. Шаги для воспроизведения
-2. Ожидаемое поведение
-3. Фактическое поведение
+## Steps to Reproduce
+1. Go to \'...\'
+2. Click on \'....\'
+3. Scroll down to \'....\'
+4. See error
 
-## Окружение
-- Node.js версия: 
-- Браузер: 
-- Версия роутера:
+## Expected Behavior
+A clear and concise description of what you expected to happen.
 
-## Код для воспроизведения
+## Actual Behavior
+A clear and concise description of what actually happened.
+
+## Environment
+- Node.js version:
+- Browser (if applicable):
+- @riogz/router version:
+
+## Reproducible Code Snippet
+Provide a minimal code snippet or link to a repository that reproduces the issue.
 \`\`\`javascript
-// Минимальный пример
+// Your minimal example here
 \`\`\`
 ```
 
-## 📚 Полезные ресурсы
+## 📚 Useful Resources
 
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [GitHub Flow](https://guides.github.com/introduction/flow/)
-- [Документация проекта](./README.md)
-- [Примеры использования](./examples/)
+- [Project Documentation](./README.md)
+- [Usage Examples](./examples/)
 
-## ❓ Вопросы?
+## ❓ Questions?
 
-Если у вас есть вопросы:
-1. Проверьте [Issues](https://github.com/riogod/router/issues)
-2. Создайте новый Issue с тегом `question`
-3. Спросите в PR, если вопрос связан с вашими изменениями
+If you have questions:
+1. Check [Issues](https://github.com/riogod/router/issues) to see if it has been asked before.
+2. Create a new Issue with the `question` tag.
+3. Ask in your PR if the question is related to your changes.
 
 ---
 
-**Помните**: Ваш вклад ценен! Не бойтесь создавать PR, даже если не уверены в чем-то. Мы поможем довести изменения до идеального состояния. 🚀 
-
-
+**Remember**: Your contribution is valuable! Don\'t be afraid to create a PR, even if you\'re unsure about something. We\'ll help you get the changes to a perfect state. 🚀
 
 ## 🎯 Best Practices
 
 ### Commit Messages:
-Используйте [Conventional Commits](https://www.conventionalcommits.org/):
+Use [Conventional Commits](https://www.conventionalcommits.org/):
 ```bash
-feat: добавить новую функцию роутинга
-fix: исправить баг с навигацией  
-feat!: изменить API роутера (breaking change)
-docs: обновить документацию
-chore: обновить зависимости
+feat: add new routing feature
+fix: correct navigation bug
+feat!: change router API (breaking change)
+docs: update documentation
+chore: update dependencies
 ```
