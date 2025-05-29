@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-plugin-persistent-params",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "This package provides a plugin for @riogz/router that maintains persistent parameters across route transitions.",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -25,10 +25,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@riogz/router": "^0.0.15"
+    "@riogz/router": "^0.0.16"
   },
   "peerDependencies": {
-    "@riogz/router": "^0.0.15"
+    "@riogz/router": "^0.0.16"
   },
   "homepage": "https://github.com/riogod/router/tree/master/packages/router-plugin-persistent-params",
   "publishConfig": {

@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-helpers",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "This package provides utility functions for comparing and checking route segments in hierarchical router systems.",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
