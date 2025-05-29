@@ -20,7 +20,7 @@ export interface RouteNodeProps {
     /** The route node name to monitor for changes */
     nodeName: string
     /** Render prop function that receives route context */
-    children: (routeContext: RouteContext) => ReactNode
+    children: ReactNode | ((routeContext: RouteContext) => ReactNode)
 }
 
 /**
@@ -33,19 +33,6 @@ export interface RouteNodeProps {
 interface InternalRouteNodeRendererProps extends RouteNodeProps, RouteContext {}
 
 /**
- * Internal render function for RouteNode content.
- * Executes the children render prop with route context.
- * 
- * @param {InternalRouteNodeRendererProps} props - Component props
- * @returns {React.ReactNode} Rendered content from children function
- * @private
- */
-const _RouteNodeRenderFunction = (props: InternalRouteNodeRendererProps): React.ReactNode => {
-    const { router, route, previousRoute, children } = props;
-    return children({ router, route, previousRoute });
-};
-
-/**
  * Typed wrapper component that ensures proper React element return type.
  * Handles active/inactive state and wraps non-element content in fragments.
  * 
@@ -56,25 +43,25 @@ const _RouteNodeRenderFunction = (props: InternalRouteNodeRendererProps): React.
 const TypedRouteNodeRenderer = (props: InternalRouteNodeRendererProps): React.ReactElement | null => {
     const { router, route, previousRoute, nodeName, children } = props;
 
-    // Определяем, активен ли данный узел RouteNode
+    // Determine if this RouteNode is active
     const isActive = route && route.name === nodeName;
 
     if (!isActive) {
-        return null; // Не рендерить дочерние элементы, если узел не активен
+        return null; // Don't render children if node is not active
     }
 
-    // Если узел активен, рендерим дочерние элементы
-    const contentToRender = children({ router, route, previousRoute });
+    // If node is active, render children
+    const contentToRender = typeof children === 'function' ? children({ router, route, previousRoute }) : children;
 
     if (contentToRender === null || typeof contentToRender === 'undefined' || typeof contentToRender === 'boolean') {
-        // Булевы значения (валидный ReactNode) приводят к отсутствию рендера, аналогично null.
+        // Boolean values (valid ReactNode) result in no render, similar to null.
         return null;
     }
     if (React.isValidElement(contentToRender)) {
-        return contentToRender; // Уже ReactElement
+        return contentToRender; // Already a ReactElement
     }
-    // Для строк, чисел и других ReactNode, которые не являются ReactElement (например, массивы узлов),
-    // оборачиваем во фрагмент, чтобы сделать их ReactElement.
+    // For strings, numbers and other ReactNode that are not ReactElement (e.g., arrays of nodes),
+    // wrap in fragment to make them ReactElement.
     return <>{contentToRender}</>;
 };
 
@@ -85,37 +72,35 @@ const TypedRouteNodeRenderer = (props: InternalRouteNodeRendererProps): React.Re
  * @private
  */
 const InternalRouteNodeRenderer = memo(TypedRouteNodeRenderer, (prevProps, nextProps) => {
-    // 1. Проверяем базовые изменения, не связанные с роутом
+    // 1. Check basic changes not related to route
     if (prevProps.children !== nextProps.children || prevProps.nodeName !== nextProps.nodeName) {
-        return false; // Нужно обновить
+        return false; // Need to update
     }
 
-    // 2. Определяем состояние активности для предыдущих и следующих пропсов
+    // 2. Determine activity state for previous and next props
     const wasActive = prevProps.route && prevProps.route.name === prevProps.nodeName;
     const willBeActive = nextProps.route && nextProps.route.name === nextProps.nodeName;
 
-    // 3. Если состояние активности изменилось, нужно обновить
+    // 3. If activity state changed, need to update
     if (wasActive !== willBeActive) {
-        return false; // Нужно обновить
+        return false; // Need to update
     }
 
-    // 4. Если узел остается активным, проверяем, нужно ли его обновить
-    //    (например, из-за изменения параметров маршрута или других деталей в nextProps.route)
-    //    shouldUpdateNode здесь проверяет, нужно ли обновлять АКТИВНЫЙ узел
-    if (willBeActive) { // Эквивалентно wasActive, так как они равны на этом этапе
+    // 4. If node remains active, check if it needs to be updated
+    //    (e.g., due to route parameter changes or other details in nextProps.route)
+    //    shouldUpdateNode here checks if ACTIVE node needs updating
+    if (willBeActive) { // Equivalent to wasActive, since they are equal at this point
         const needsUpdateIfActive = shouldUpdateNode(nextProps.nodeName)(
             nextProps.route,
             nextProps.previousRoute
         );
-        return !needsUpdateIfActive; // Если needsUpdateIfActive=true, то !true = false (нужно обновить)
+        return !needsUpdateIfActive; // If needsUpdateIfActive=true, then !true = false (need to update)
     }
 
-    // 5. Если узел был неактивен и остается неактивным, его не нужно обновлять.
-    //    (Сюда мы попадаем, если wasActive = false и willBeActive = false)
-    return true; // Пропсы равны, не нужно обновлять
+    // 5. If node was inactive and remains inactive, it doesn't need updating.
+    //    (We reach here if wasActive = false and willBeActive = false)
+    return true; // Props are equal, no need to update
 });
-
-// const InternalRouteNodeRenderer = TypedRouteNodeRenderer; // Возвращаем memo
 
 const RouteNode: FunctionComponent<RouteNodeProps> = (props) => {
     const routeCtx = useRoute();

@@ -195,6 +195,18 @@ MIT © [Vyacheslav Krasnyanskiy](https://github.com/riogod)
 - Создайте PR в соответствующую target ветку
 - Большинство PR идут в `master`, hotfix - в `release/vX.Y.Z`
 
+## 🎯 Best Practices
+
+### Commit Messages:
+Используйте [Conventional Commits](https://www.conventionalcommits.org/):
+```bash
+feat: добавить новую функцию роутинга
+fix: исправить баг с навигацией  
+feat!: изменить API роутера (breaking change)
+docs: обновить документацию
+chore: обновить зависимости
+```
+
 ## 🔗 Links
 
 - [GitHub](https://github.com/riogod/router)
