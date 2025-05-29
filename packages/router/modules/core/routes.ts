@@ -1,6 +1,7 @@
 import { RouteNode } from '../lib/route-node'
 import { constants } from '../constants'
-import { Router, Route } from '../types/router'
+import { Router, Route, ActivationFnFactory } from '../types/router'
+import { Params } from '../types/base'
 
 /**
  * Enhances a router with route management capabilities.
@@ -72,7 +73,7 @@ export default function withRoutes<Dependencies>(
         const rootNode =
             routes instanceof RouteNode
                 ? routes
-                : new RouteNode('', '', routes, { onAdd: onRouteAdded })
+                : new RouteNode('', '', routes, { onAdd: onRouteAddedInternal })
 
         /**
          * Callback function called when a route is added to the route tree.
@@ -87,7 +88,7 @@ export default function withRoutes<Dependencies>(
          * 
          * @param route - Route definition that was added
          */
-        function onRouteAdded(route) {
+        function onRouteAddedInternal(route: Route<Dependencies>) {
             if (route.canActivate)
                 router.canActivate(route.name, route.canActivate)
 
@@ -95,6 +96,12 @@ export default function withRoutes<Dependencies>(
                 router.canDeactivate(route.name, route.canDeactivate)
 
             if (route.forwardTo) router.forward(route.name, route.forwardTo)
+
+            // Handle redirectToFirstAllowNode
+            if (route.redirectToFirstAllowNode) {
+                router.config.redirectToFirstAllowNodeMap = router.config.redirectToFirstAllowNodeMap || {}
+                router.config.redirectToFirstAllowNodeMap[route.name] = true
+            }
 
             if (route.decodeParams)
                 router.config.decoders[route.name] = route.decodeParams
@@ -142,7 +149,7 @@ export default function withRoutes<Dependencies>(
          */
         router.add = (routesInput, finalSort?) => {
             if (routesInput) {
-                rootNode.add(routesInput, onRouteAdded, !finalSort);
+                rootNode.add(routesInput, onRouteAddedInternal, !finalSort);
             }
 
             if (finalSort) {
@@ -367,4 +374,69 @@ export default function withRoutes<Dependencies>(
 
         return router
     }
+}
+
+export async function findFirstAccessibleChildAtPath(router: Router, routeName: string, params?: Params): Promise<string | null> {
+    if (!router.rootNode) {
+        return null;
+    }
+
+    // @ts-ignore: getSegmentsByName is private but provides the necessary functionality here
+    const segments = router.rootNode.getSegmentsByName(routeName);
+    if (!segments || segments.length === 0) {
+        return null;
+    }
+    const targetNode = segments[segments.length - 1];
+
+    if (!targetNode || !targetNode.children || targetNode.children.length === 0) {
+        return null;
+    }
+
+    const lifecycleFunctions = router.getLifecycleFunctions() as [
+        Record<string, ReturnType<ActivationFnFactory<any>>>,
+        Record<string, ReturnType<ActivationFnFactory<any>>>
+    ];
+    const canActivateFunctions = lifecycleFunctions[1];
+
+    for (const childNode of targetNode.children) {
+        const childFullName = routeName + '.' + childNode.name;
+        const childState = router.buildState(childFullName, params);
+        if (!childState) {
+            continue;
+        }
+
+        const fullChildState = router.makeState(
+            childState.name,
+            childState.params,
+            router.buildPath(childState.name, childState.params)
+        );
+
+        const canActivateHandler = canActivateFunctions[childFullName];
+        if (canActivateHandler) {
+            try {
+                const canActivateOutcome = await new Promise<boolean>((resolvePromise) => {
+                    try {
+                        canActivateHandler(fullChildState, null, (err) => {
+                            if (err) {
+                                resolvePromise(false);
+                            } else {
+                                resolvePromise(true);
+                            }
+                        });
+                    } catch (syncError) {
+                        resolvePromise(false);
+                    }
+                });
+
+                if (canActivateOutcome) {
+                    return childFullName;
+                }
+            } catch (guardError) {
+                continue;
+            }
+        } else {
+            return childFullName;
+        }
+    }
+    return null;
 }

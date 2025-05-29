@@ -65,6 +65,46 @@ const routes: Route<Dependencies>[] = [
       }
     ]
   },
+  {
+    name: 'dashboard',
+    path: '/dashboard',
+    redirectToFirstAllowNode: true,
+    children: [
+      { name: 'overview', path: '/overview' },
+      { name: 'analytics', path: '/analytics' },
+      { name: 'settings', path: '/settings' }
+    ]
+  },
+  {
+    name: 'users',
+    path: '/users',
+    onEnterNode: async (_state, _fromState, deps) => {
+      console.log('Entering users section with deps:', deps)
+    },
+    children: [
+      { name: 'list', path: '/list' },
+      { name: 'create', path: '/create' },
+      { name: 'edit', path: '/edit/:id' }
+    ]
+  },
+  {
+    name: 'admin',
+    path: '/admin',
+    redirectToFirstAllowNode: true,
+    canActivate: (_router, deps) => (_toState, _fromState, done) => {
+      // Mock admin check - in real app would check user permissions
+      const isAdmin = deps?.user?.role === 'admin'
+      if (isAdmin) {
+        done()
+      } else {
+        done(new Error('Access denied - admin only'))
+      }
+    },
+    children: [
+      { name: 'users', path: '/users' },
+      { name: 'system', path: '/system' }
+    ]
+  }
 ];
 
 // Инициализация роутера с плагинами ДО start
