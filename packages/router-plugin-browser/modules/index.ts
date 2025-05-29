@@ -144,6 +144,10 @@ function browserPluginFactory(
             const prefix = options.useHash ? `#${options.hashPrefix}` : ''
             const path = router.buildPath(route, params)
 
+            if (path === null) {
+                return null // Return null if the base path generation failed
+            }
+
             if (options.useHash) {
                 if (base === '/') {
                     return prefix + path

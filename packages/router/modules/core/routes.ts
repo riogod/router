@@ -126,6 +126,77 @@ export default function withRoutes<Dependencies>(
                 router.registerBrowserTitle(route.name, route.browserTitle)
         }
 
+        /**
+         * Helper function to recursively clear handlers associated with a route name.
+         */
+        function _recursiveClearHandlers<Dependencies>(router: Router<Dependencies>, routeName: string) {
+            // Clear from canActivate and canDeactivate maps (assuming they are accessible, e.g., via router.clearCanActivate() or direct map manipulation if exposed)
+            // This part depends on how these are stored and cleared. Let's assume direct access or specific clearers per route aren't public
+            // router.clearCanActivate(routeName); // Hypothetical direct method
+            // router.clearCanDeactivate(routeName);
+
+            // Accessing internal maps for guards - this is a common pattern if specific clearers per route aren't public
+            if (router.getLifecycleFunctions) { // Check if method exists, adjust based on actual API
+                const [canActivateFunctions, canDeactivateFunctions] = router.getLifecycleFunctions();
+                delete canActivateFunctions[routeName];
+                delete canDeactivateFunctions[routeName];
+                // Also clear from factory maps if they are separate
+                const [canActivateFactories, canDeactivateFactories] = router.getLifecycleFactories();
+                delete canActivateFactories[routeName];
+                delete canDeactivateFactories[routeName];
+            }
+
+            // Clear route lifecycle hooks
+            if (router.getRouteLifecycleFunctions) { // Check if method exists
+                const routeLifecycle = router.getRouteLifecycleFunctions();
+                if (routeLifecycle.onEnterNode) delete routeLifecycle.onEnterNode[routeName];
+                if (routeLifecycle.onExitNode) delete routeLifecycle.onExitNode[routeName];
+                if (routeLifecycle.onNodeInActiveChain) delete routeLifecycle.onNodeInActiveChain[routeName];
+                // Also clear from factory maps if they are separate
+                const routeLifecycleFactories = router.getRouteLifecycleFactories();
+                if (routeLifecycleFactories.onEnterNode) delete routeLifecycleFactories.onEnterNode[routeName];
+                if (routeLifecycleFactories.onExitNode) delete routeLifecycleFactories.onExitNode[routeName];
+                if (routeLifecycleFactories.onNodeInActiveChain) delete routeLifecycleFactories.onNodeInActiveChain[routeName];
+            }
+
+            // Clear browser title functions
+            if (router.getBrowserTitleFunctions) { // Check if method exists
+                const browserTitleFunctions = router.getBrowserTitleFunctions();
+                delete browserTitleFunctions[routeName];
+            }
+
+            // Clear forward mapping
+            if (router.config.forwardMap) {
+                delete router.config.forwardMap[routeName];
+                // Also check if any route forwards TO this routeName and clear that too, if desired
+                for (const key in router.config.forwardMap) {
+                    if (router.config.forwardMap[key] === routeName) {
+                        delete router.config.forwardMap[key];
+                    }
+                }
+            }
+            
+            // Clear redirectToFirstAllowNode mapping
+            if (router.config.redirectToFirstAllowNodeMap) {
+                delete router.config.redirectToFirstAllowNodeMap[routeName];
+            }
+
+            // Clear decoders and encoders
+            if (router.config.decoders) {
+                delete router.config.decoders[routeName];
+            }
+            if (router.config.encoders) {
+                delete router.config.encoders[routeName];
+            }
+
+            // Clear default params
+            if (router.config.defaultParams) {
+                delete router.config.defaultParams[routeName];
+            }
+            
+            // Potentially clear other route-specific configurations if any are stored elsewhere
+        }
+
         router.rootNode = rootNode
 
         /**
@@ -182,6 +253,78 @@ export default function withRoutes<Dependencies>(
             if (canActivateHandler) router.canActivate(name, canActivateHandler)
             return router
         }
+
+        /**
+         * Removes a route node and all its children from the router.
+         * This includes cleaning up associated route guards, lifecycle hooks, and other configurations.
+         *
+         * @param name - The full name of the route node to remove (e.g., 'users.profile').
+         * @returns The router instance for chaining.
+         */
+        router.removeNode = (name: string): Router<Dependencies> => {
+            const segments = name.split('.');
+            let currentNode = router.rootNode;
+            let parentNode = null;
+
+            // Find the parent of the node to be removed
+            for (let i = 0; i < segments.length - 1; i++) {
+                const segmentName = segments[i];
+                const foundNode = currentNode.children.find(child => child.name === segmentName);
+                if (foundNode) {
+                    parentNode = foundNode;
+                    currentNode = foundNode;
+                } else {
+                    // Parent segment not found, so node to remove doesn't exist or path is invalid
+                    return router;
+                }
+            }
+
+            const nodeNameToRemove = segments[segments.length - 1];
+            const targetNode = (parentNode || router.rootNode).children.find(child => child.name === nodeNameToRemove);
+
+            if (targetNode) {
+                // Recursively collect all node names to be removed (target + descendants)
+                const allRemovedNodeNames: string[] = [];
+                function collectDescendantNames(node: RouteNode, baseName: string) {
+                    const fullName = baseName ? `${baseName}.${node.name}` : node.name;
+                    // For rootNode direct children, baseName is empty initially
+                    const actualFullName = (parentNode === null && segments.length === 1) || (parentNode === router.rootNode && segments.length === 1 && segments[0] === node.name) ? node.name : fullName;
+                    
+                    // Correction for root node direct children full name
+                    let correctedFullName = fullName;
+                    if (!parentNode || parentNode === router.rootNode) {
+                         // If segments.length is 1, it means we are removing a direct child of rootNode
+                         // In this case, the fullName passed to _recursiveClearHandlers should be just node.name
+                         // Otherwise, if it is a descendant of a direct child of rootNode, it should be parent.child
+                        const pathSegments = name.split('.');
+                        if(pathSegments.length === 1 && pathSegments[0] === node.name) {
+                            correctedFullName = node.name;
+                        } else if (segments.length > 1 && node.name !== segments[segments.length-1]) {
+                            //This is a child of the target node
+                            correctedFullName = name + '.' + node.name.split('.').slice(segments.length-1).join('.');
+                        } else if (segments.length > 1 && node.name === segments[segments.length-1]){
+                            correctedFullName = name;
+                        }
+                    }
+                    allRemovedNodeNames.push(correctedFullName);
+                    node.children.forEach(child => collectDescendantNames(child, correctedFullName));
+                }
+                
+                collectDescendantNames(targetNode, parentNode ? segments.slice(0, -1).join('.') : '');
+
+                // Remove the node from its parent
+                const removed = (parentNode || router.rootNode).removeNode(nodeNameToRemove);
+
+                if (removed) {
+                    // Clear all associated handlers and configurations
+                    allRemovedNodeNames.forEach(nodeName => {
+                        _recursiveClearHandlers(router, nodeName);
+                    });
+                }
+            }
+
+            return router;
+        };
 
         /**
          * Check if a route is currently active.

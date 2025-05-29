@@ -427,6 +427,81 @@ console.log('Programmatically added product routes.');
 router.navigate('products.detail', { id: 'abc' });
 ```
 
+### `router.removeNode`
+
+Removes a route node and all its children from the router. This operation also cleans up any associated route guards (canActivate, canDeactivate), lifecycle hooks (onEnterNode, onExitNode), browser title configurations, forwarding rules, and other settings tied to the removed node and its descendants.
+
+**Signature:**
+
+```typescript
+removeNode(name: string): Router<Dependencies>;
+```
+
+**Parameters:**
+
+-   `name`: `string`
+    The full name of the route node to remove (e.g., `'users.profile'`, `'admin'`).
+
+**Returns:**
+
+-   `Router<Dependencies>`: The router instance, allowing for method chaining.
+
+**Example:**
+
+```typescript
+// Assume router is already created with routes:
+// home, users, users.list, users.profile, users.profile.view, about
+
+// Remove a top-level node
+router.removeNode('about');
+
+// Attempting to build a path for 'about' will now fail (or return null/throw based on router.buildPath behavior)
+try {
+  const path = router.buildPath('about'); 
+  console.log('Path for about:', path); // This line might not be reached if buildPath throws
+} catch (e) {
+  console.error('Error building path for removed route 'about':', e.message);
+}
+
+// Attempting to navigate to 'about' will result in a ROUTE_NOT_FOUND error
+router.navigate('about', {}, (err, state) => {
+  if (err && err.code === 'ROUTE_NOT_FOUND') { // Assuming errorCodes.ROUTE_NOT_FOUND
+    console.log('Navigation to 'about' failed as expected: Route not found.');
+  } else if (err) {
+    console.error('Unexpected error navigating to 'about':', err);
+  }
+});
+
+// Remove a nested node and its children
+router.removeNode('users.profile');
+
+// Routes 'users.profile' and 'users.profile.view' are now removed.
+// Any canActivate, onEnterNode, etc., handlers for these routes are cleared.
+
+try {
+  router.buildPath('users.profile', { id: '123' });
+} catch (e) {
+  console.error('Error building path for removed route 'users.profile':', e.message);
+}
+
+try {
+  router.buildPath('users.profile.view', { id: '123' });
+} catch (e) {
+  console.error('Error building path for removed route 'users.profile.view':', e.message);
+}
+
+// The parent 'users' and sibling 'users.list' should still exist if not removed
+const usersPath = router.buildPath('users');
+console.log('Path for users (should still exist):', usersPath); // e.g., /users
+
+const usersListPath = router.buildPath('users.list'); 
+console.log('Path for users.list (should still exist):', usersListPath); // e.g., /users/list
+
+// Attempting to remove a non-existent node will not throw an error
+router.removeNode('nonexistent.route');
+console.log('Attempted to remove a non-existent route, no error expected.');
+```
+
 ### `router.isActive`
 
 Checks if a specific route, optionally with specific parameters, is currently active. This is useful for highlighting active links in navigation menus or conditionally rendering UI elements based on the current route.
@@ -1140,663 +1215,4 @@ getLifecycleFunctions(): [
 
 **Returns:**
 
--   An array containing two objects: the first for `canActivate` functions and the second for `canDeactivate` functions, keyed by route name.
-
-**Usage:** Primarily for internal use or advanced debugging/plugin development to inspect the resolved guard functions.
-
-### `router.getRouteLifecycleFactories`
-
-Retrieves factories for route-level lifecycle hooks like `onEnterNode`, `onExitNode`, and `onNodeInActiveChain` that might have been defined directly on route configurations.
-
-**Signature (Conceptual - actual return type might be more specific):**
-
-```typescript
-getRouteLifecycleFactories(): {
-    onEnterNode: { [key: string]: (router: Router, deps: Dependencies) => (state: State, fromState: State) => Promise<void> },
-    onExitNode: { [key: string]: (router: Router, deps: Dependencies) => (state: State, fromState: State) => Promise<void> },
-    onNodeInActiveChain: { [key: string]: (router: Router, deps: Dependencies) => (state: State, fromState: State) => Promise<void> }
-};
-```
-
-**Usage:** Internal mechanism for the router to access and invoke these lifecycle hooks during transitions. Not typically called directly by application code.
-
-### `router.getRouteLifecycleFunctions`
-
-Retrieves the actual resolved functions for route-level lifecycle hooks like `onEnterNode`, `onExitNode`.
-
-**Signature (Conceptual):**
-
-```typescript
-getRouteLifecycleFunctions(): {
-    onEnterNode: { [key: string]: (state: State, fromState: State) => Promise<void> },
-    onExitNode: { [key: string]: (state: State, fromState: State) => Promise<void> },
-    onNodeInActiveChain: { [key: string]: (state: State, fromState: State) => Promise<void> }
-};
-```
-
-**Usage:** Internal mechanism. These are the functions executed by the router when a route node is entered, exited, or part of the active chain.
-
-### `router.getBrowserTitleFunctions`
-
-Retrieves functions responsible for determining the browser/document title for routes that have a `browserTitle` property defined (either as a string or a function) in their configuration.
-
-**Signature:**
-
-```typescript
-getBrowserTitleFunctions(): { [key: string]: string | ((state: State, deps: Dependencies) => Promise<string>) };
-```
-
-**Returns:**
-
--   An object where keys are route names and values are either the static title string or a function that resolves to the title string.
-
-**Usage:** Used internally, often by a browser plugin, to update the document title upon successful navigation.
-
-### `router.registerOnEnterNode` / `router.registerOnExitNode` / `router.registerOnNodeInActiveChain` / `router.registerBrowserTitle`
-
-These methods are **internal** mechanisms for the router to register lifecycle hooks and browser title handlers that are typically defined declaratively within the route objects during `createRouter` or `router.add()`. They are not intended for direct public use. Their purpose is to populate the internal collections that `getRouteLifecycleFunctions` and `getBrowserTitleFunctions` would later retrieve for execution.
-
-**Example (Conceptual - Illustrating internal registration):**
-
-```typescript
-// When a route like this is processed:
-// { 
-//   name: 'myRoute', 
-//   path: '/my-route', 
-//   onEnterNode: async (toState, fromState, deps) => { console.log('Entering!'); },
-//   browserTitle: (state, deps) => `Page: ${state.params.title}`
-// }
-
-// Internally, something like this might happen:
-// router.registerOnEnterNode('myRoute', onEnterNodeHandlerFromConfig);
-// router.registerBrowserTitle('myRoute', browserTitleHandlerFromConfig);
-```
-
-### `router.findFirstAccessibleChild`
-
-An **internal** method used to implement the `redirectToFirstAllowNode` functionality. When a route with `redirectToFirstAllowNode: true` is activated, this method is called to find the first child route that can be activated (i.e., its `canActivate` guards pass).
-
-**Signature (Conceptual):**
-
-```typescript
-findFirstAccessibleChild(routeName: string, params?: any): Promise<string | null>;
-```
-
-**Parameters:**
-
-- `routeName`: The name of the parent route that has `redirectToFirstAllowNode: true`.
-- `params?`: Current parameters that might be relevant for child route activation.
-
-**Returns:**
-
-- A Promise that resolves to the name of the first accessible child route, or `null` if none are found or accessible.
-
-**Usage:** This is an internal helper for the redirection logic and not for direct public invocation.
-
-### `router.usePlugin`
-
-Registers one or more plugin factories with the router instance. Plugins extend the router's functionality, for example, by adding browser integration, logging, or specific state handling logic. This method typically calls the plugin factory, allowing the plugin to initialize itself and attach to the router.
-
-**Signature:**
-
-```typescript
-usePlugin(...pluginFactories: Array<PluginFactory<Dependencies>>): Unsubscribe;
-```
-
-**Parameters:**
-
--   `...pluginFactories`: `Array<PluginFactory<Dependencies>>`
-    A rest parameter for one or more plugin factory functions. A `PluginFactory` is a function that usually takes `(router: Router, dependencies?: Dependencies)` as arguments and returns a `Plugin` object (or void if it self-registers listeners). The `Plugin` object often has `onStart`, `onStop`, `onTransitionSuccess`, etc., lifecycle methods that the router will call.
-
-**Returns:**
-
--   `Unsubscribe`: A function that, when called, will attempt to unregister all plugins added in this `usePlugin` call. This typically involves calling an `onStop` or `teardown` method on each plugin if provided by the plugin.
-
-**Example:**
-
-```typescript
-import browserPlugin from '@riogz/router-plugin-browser';
-import loggerPlugin from '@riogz/router-plugin-logger';
-
-// const router = createRouter(routes);
-
-// Register the browser plugin for HTML5 history API integration
-const unsubscribeBrowserPlugin = router.usePlugin(browserPlugin({ useHash: false }));
-
-// Register a logger plugin for debugging transitions
-const unsubscribeLoggerPlugin = router.usePlugin(loggerPlugin());
-
-router.start();
-
-// Later, to stop and clean up a specific plugin (if its factory supports it via the returned unsubscribe)
-// For example, if browserPlugin returned its own specific unsubscribe for its listeners:
-// unsubscribeBrowserPlugin(); // This is conceptual; `usePlugin` returns a general unsubscribe for what it added.
-
-// To attempt to tear down all plugins added via a specific usePlugin call (if supported):
-// const unsubscribeAll = router.usePlugin(pluginA, pluginB);
-// unsubscribeAll(); // This would call teardown logic for pluginA and pluginB 
-```
-
-**Note:** The `Unsubscribe` function returned by `usePlugin` is a general one for the batch of plugins added. Individual plugins might also offer their own more specific teardown if they manage resources outside of what `usePlugin` can track.
-
-### `router.addPlugin`
-
-Adds an already instantiated plugin object to the router. This is a lower-level method compared to `usePlugin` which expects plugin factories. `addPlugin` is typically used by `usePlugin` internally after the factory has created the plugin instance, or in scenarios where plugin instances are managed externally.
-
-**Signature:**
-
-```typescript
-addPlugin(plugin: Plugin): Router<Dependencies>;
-```
-
-**Parameters:**
-
--   `plugin`: `Plugin`
-    A plugin object, which should conform to the `Plugin` interface (typically having methods like `onStart`, `onStop`, `onTransitionStart`, `onTransitionSuccess`, `onTransitionError`, `onTransitionCancel`).
-
-**Returns:**
-
--   `Router<Dependencies>`: The router instance for method chaining.
-
-**Usage:** Generally for internal use by `usePlugin` or advanced plugin development.
-
-```typescript
-// Conceptual example - usually you use router.usePlugin(pluginFactory)
-// const myCustomPluginInstance = { 
-//   name: 'my-custom-plugin', 
-//   onStart: () => console.log('My plugin started'), 
-//   onStop: () => console.log('My plugin stopped'),
-//   onTransitionSuccess: (toState, fromState) => { /* ... */ }
-// };
-// router.addPlugin(myCustomPluginInstance);
-```
-
-### `router.getPlugins`
-
-Retrieves an array of the plugin *factories* that have been registered with the router via `usePlugin`.
-
-**Signature:**
-
-```typescript
-getPlugins(): Array<PluginFactory<Dependencies>>;
-```
-
-**Returns:**
-
--   `Array<PluginFactory<Dependencies>>`: An array of the plugin factory functions.
-
-**Usage:** For introspection or debugging, to see which plugin factories are configured on the router.
-
-```typescript
-const registeredPluginFactories = router.getPlugins();
-console.log('Registered plugin factories count:', registeredPluginFactories.length);
-registeredPluginFactories.forEach(factory => {
-  // console.log(factory.name); // May not always have a useful name property
-});
-```
-
-### `router.useMiddleware`
-
-Registers one or more middleware factory functions with the router. Middleware functions are invoked in sequence for every navigation attempt (before `canActivate` guards). They can inspect, modify, or augment the transition process, or trigger side effects.
-
-**Signature:**
-
-```typescript
-useMiddleware(...middlewareFactories: Array<MiddlewareFactory<Dependencies>>): Unsubscribe;
-```
-
-**Parameters:**
-
--   `...middlewareFactories`: `Array<MiddlewareFactory<Dependencies>>`
-    A rest parameter for one or more middleware factory functions. A `MiddlewareFactory` is a function like `(router: Router, dependencies?: Dependencies) => MiddlewareFn`. The `MiddlewareFn` itself is typically `(toState, fromState, done) => Promise<any> | any | void`. The `done` callback in middleware is crucial for controlling the flow: `done()` to proceed, `done(err)` to error, `done(false)` to cancel, or `done({ redirect: ...})` to redirect.
-
-**Returns:**
-
--   `Unsubscribe`: A function that, when called, removes all middleware added in this specific `useMiddleware` call.
-
-**Example:**
-
-```typescript
-// Logging middleware factory
-const loggingMiddlewareFactory: MiddlewareFactory<any> = (router, deps) => 
-  (toState, fromState, done) => {
-    console.log(`Attempting to navigate from ${fromState?.name || 'N/A'} to ${toState.name}`, toState.params);
-    done(); // Proceed with the transition
-  };
-
-// Data fetching middleware factory (conceptual)
-const fetchDataMiddlewareFactory: MiddlewareFactory<any> = (router, deps) => 
-  async (toState, fromState, done) => {
-    if (toState.meta?.needsData) {
-      try {
-        // const data = await deps.api.fetchDataForRoute(toState.name, toState.params);
-        // toState.meta.data = data; // Augment state with fetched data
-        done();
-      } catch (error) {
-        done(error); // Signal an error in transition
-      }
-    } else {
-      done();
-    }
-  };
-
-const unsubscribeLogging = router.useMiddleware(loggingMiddlewareFactory);
-// const unsubscribeDataFetching = router.useMiddleware(fetchDataMiddlewareFactory);
-
-// To remove the logging middleware later:
-// unsubscribeLogging();
-```
-
-### `router.clearMiddleware`
-
-Removes all registered middleware functions from the router.
-
-**Signature:**
-
-```typescript
-clearMiddleware(): Router<Dependencies>;
-```
-
-**Returns:**
-
--   `Router<Dependencies>`: The router instance for method chaining.
-
-**Example:**
-
-```typescript
-router.clearMiddleware();
-console.log('All middleware have been cleared.');
-```
-
-### `router.getMiddlewareFactories`
-
-Retrieves an array of the middleware *factories* that have been registered with the router via `useMiddleware`. These are the functions you provided which return the actual middleware functions.
-
-**Signature:**
-
-```typescript
-getMiddlewareFactories: () => Array<MiddlewareFactory<Dependencies>>;
-```
-
-**Returns:**
-
--   `Array<MiddlewareFactory<Dependencies>>`: An array of the registered middleware factory functions.
-
-**Usage:** For introspection or debugging.
-
-```typescript
-const factories = router.getMiddlewareFactories();
-console.log(`There are ${factories.length} middleware factories registered.`);
-```
-
-### `router.getMiddlewareFunctions`
-
-Retrieves an array of the actual resolved middleware *functions* (the functions returned by the factories) that are currently active on the router.
-
-**Signature:**
-
-```typescript
-getMiddlewareFunctions: () => Middleware[]; // Middleware is (toState, fromState, done) => ...
-```
-
-**Returns:**
-
--   `Middleware[]`: An array of the middleware functions that will be executed during transitions.
-
-**Usage:** For introspection or advanced debugging to inspect the exact middleware pipeline.
-
-```typescript
-const middlewarePipeline = router.getMiddlewareFunctions();
-console.log(`Current middleware pipeline has ${middlewarePipeline.length} functions.`);
-```
-
-### `router.setDependency`
-
-Sets or updates a single dependency in the router's dependency injection container. Dependencies are made available to middleware, plugins, and route lifecycle functions (like `canActivate`, `onEnterNode`).
-
-**Signature:**
-
-```typescript
-setDependency(dependencyName: string, dependency: any): Router<Dependencies>;
-```
-
-**Parameters:**
-
--   `dependencyName`: `string`
-    The name (key) of the dependency to set.
--   `dependency`: `any`
-    The actual dependency instance or value (e.g., an API service instance, a configuration object).
-
-**Returns:**
-
--   `Router<Dependencies>`: The router instance for method chaining.
-
-**Example:**
-
-```typescript
-// const router = createRouter(routes, options); // Initialized without some dependencies
-
-const apiService = { fetchData: async (id) => ({ id, data: "Sample data" }) };
-router.setDependency('apiService', apiService);
-
-const authService = { getCurrentUser: async () => ({ name: "Admin" }) };
-router.setDependency('authService', authService);
-
-console.log('Dependencies set programmatically.');
-
-// These dependencies can now be accessed in guards/middleware if they were defined to receive them.
-// e.g., in a guard factory: (router, deps) => { const user = deps.authService.getCurrentUser(); ... }
-```
-
-### `router.setDependencies`
-
-Sets or replaces the entire dependencies object in the router's dependency injection container. This overwrites any previously existing dependencies.
-
-**Signature:**
-
-```typescript
-setDependencies(dependencies: Dependencies): Router<Dependencies>;
-```
-
-**Parameters:**
-
--   `dependencies`: `Dependencies`
-    An object where keys are dependency names and values are the dependency instances. The type `Dependencies` is generic and defined when creating the router.
-
-**Returns:**
-
--   `Router<Dependencies>`: The router instance for method chaining.
-
-**Example:**
-
-```typescript
-interface MyAppDeps {
-  logger: Console;
-  config: { apiUrl: string };
-}
-
-// const router = createRouter<MyAppDeps>(routes, options);
-
-const myAppDependencies: MyAppDeps = {
-  logger: console,
-  config: { apiUrl: 'https://api.example.com' }
-};
-
-router.setDependencies(myAppDependencies);
-console.log('Entire dependencies object has been set.');
-
-// To access:
-// router.getDependencies().logger.log('Hello from injected logger!');
-```
-
-### `router.getDependencies`
-
-Retrieves the complete dependencies object currently configured in the router.
-
-**Signature:**
-
-```typescript
-getDependencies(): Dependencies;
-```
-
-**Returns:**
-
--   `Dependencies`: The object containing all registered dependencies.
-
-**Example:**
-
-```typescript
-const allDependencies = router.getDependencies();
-if (allDependencies.apiService) {
-  // allDependencies.apiService.callSomething();
-}
-console.log('Current dependencies:', allDependencies);
-```
-
-### `router.getInjectables`
-
-Returns a tuple containing the router instance itself and its dependencies object. This is often used internally by factory functions (for guards, middleware, plugins) to receive both `router` and `dependencies` as arguments.
-
-**Signature:**
-
-```typescript
-getInjectables(): [Router<Dependencies>, Dependencies];
-```
-
-**Returns:**
-
--   `[Router<Dependencies>, Dependencies]`: A tuple where the first element is the router instance and the second is the dependencies object.
-
-**Example:**
-
-```typescript
-const [routerInstance, deps] = router.getInjectables();
-
-// This is how factories typically receive them:
-// const myGuardFactory = (routerFromInjectables, dependenciesFromInjectables) => {
-//   // ... use routerFromInjectables and dependenciesFromInjectables
-//   return (toState, fromState, done) => { /* ... */ };
-// };
-
-// const actualGuard = myGuardFactory(...router.getInjectables());
-```
-
-### `router.executeFactory`
-
-Executes a given factory function, providing it with the router instance and its dependencies as arguments. This is a utility for invoking factories in a context where they need access to these injectables.
-
-**Signature:**
-
-```typescript
-executeFactory(
-    factory: (router?: Router<Dependencies>, dependencies?: Dependencies) => any
-): any;
-```
-
-**Parameters:**
-
--   `factory`: `(router?: Router<Dependencies>, dependencies?: Dependencies) => any`
-    The factory function to execute. It will be called with `router` and `dependencies`. 
-
-**Returns:**
-
--   `any`: The result returned by the executed factory function.
-
-**Example:**
-
-```typescript
-const myCustomFactory = (rtr, dps) => {
-  console.log('Factory executed! Router started?', rtr.isStarted());
-  // if (dps.configService) { console.log(dps.configService.getSomeValue()); }
-  return 'FactoryResult';
-};
-
-const result = router.executeFactory(myCustomFactory);
-console.log('Result from executed factory:', result); // FactoryResult
-```
-
-### `router.invokeEventListeners` (Internal)
-
-This method is typically **internal** and used by the router or plugins to dispatch events to registered listeners for a specific event name.
-
-**Signature (Conceptual):**
-
-```typescript
-invokeEventListeners(eventName: string, ...args: any[]): void;
-```
-
-**Usage:** Not meant for direct public use. Plugins might use it if they introduce custom events, or the router uses it for its own lifecycle events (e.g., `transitionStart`, `transitionSuccess`).
-
-### `router.removeEventListener`
-
-Removes a previously registered event listener for a specific event name.
-
-**Signature:**
-
-```typescript
-removeEventListener(eventName: string, callback: (...args: any[]) => void): void;
-```
-
-**Parameters:**
-
--   `eventName`: `string`
-    The name of the event from which to remove the listener (e.g., 'transitionSuccess', 'pluginError').
--   `callback`: `(...args: any[]) => void`
-    The specific callback function that was originally passed to `addEventListener`. It must be the same function reference.
-
-**Returns:**
-
-- `void`
-
-**Example:**
-
-```typescript
-const onTransitionStartCallback = (toState, fromState) => {
-  console.log('Transition starting (from removeEventListener example):', toState.name);
-};
-
-router.addEventListener('transitionStart', onTransitionStartCallback);
-
-// ... later ...
-router.removeEventListener('transitionStart', onTransitionStartCallback);
-console.log('Removed onTransitionStartCallback.');
-```
-
-### `router.addEventListener`
-
-Registers an event listener for a specific router event. The router emits various events throughout its lifecycle and during transitions (e.g., `transitionStart`, `transitionSuccess`, `transitionError`, `transitionCancel`, `pluginError`).
-
-**Signature:**
-
-```typescript
-addEventListener(eventName: string, callback: (...args: any[]) => void): Unsubscribe;
-```
-
-**Parameters:**
-
--   `eventName`: `string`
-    The name of the event to listen to.
--   `callback`: `(...args: any[]) => void`
-    The function to be called when the event is emitted. The arguments passed to the callback depend on the event.
-
-**Returns:**
-
--   `Unsubscribe`: A function that, when called, will remove this specific event listener. `() => void`.
-
-**Example:**
-
-```typescript
-const handleTransitionSuccess = (toState, fromState) => {
-  console.log(`Successfully transitioned to ${toState.name} from ${fromState?.name || 'N/A'}`);
-};
-
-const unsubscribeSuccess = router.addEventListener('transitionSuccess', handleTransitionSuccess);
-
-const handleTransitionError = (toState, fromState, err) => {
-  console.error(`Error during transition to ${toState.name}:`, err);
-  // Assuming errorCodes are available, e.g., from import { errorCodes } from '@riogz/router';
-  // if (err.code === errorCodes.TRANSITION_CANCELLED) { 
-  //     console.warn('Transition was cancelled by user or guard.');
-  // }
-};
-const unsubscribeError = router.addEventListener('transitionError', handleTransitionError);
-
-// router.navigate(...); // This would trigger the listeners
-
-// To stop listening later:
-// unsubscribeSuccess();
-// unsubscribeError();
-```
-
-### `router.forward` (Potentially Deprecated or Internal)
-
-This method's name suggests forwarding from one route to another, possibly as part of a transition. However, its direct public use is unclear without more context from the router's specific design. The `forwardTo` property in route definitions or `done({ redirect: ... })` in guards/middleware are the more common ways to achieve redirection or forwarding.
-
-**Signature:**
-
-```typescript
-forward(fromRoute: string, toRoute: string): Router<Dependencies>;
-```
-
-**Parameters:**
-
--   `fromRoute`: `string`
-    The name of the route to which to forward.
--   `toRoute`: `string`
-    The name of the route to forward to.
-
-**Returns:**
-
--   `Router<Dependencies>`: The router instance.
-
-**Usage Note:** This might be an internal helper or part of an older API. Prefer declarative `forwardTo` or `redirect` objects for route forwarding logic.
-
-### `router.transitionToState` (Core Internal Method)
-
-This is a **core internal method** responsible for executing the actual transition process from a current state to a target state. It orchestrates the execution of middleware, `canDeactivate` guards for outgoing routes, `canActivate` guards for incoming routes, and finally, updating the router's current state and notifying subscribers and plugins.
-
-**Signature (Conceptual):**
-
-```typescript
-transitionToState(
-    toState: State,         // The target state to transition to
-    fromState: State,       // The current state (or previous state)
-    options: NavigationOptions, // Navigation options for this transition
-    done: DoneFn            // Callback to be invoked upon completion or error
-): void; // Or CancelFn if the process itself can be cancelled at this level
-```
-
-**Usage:** This method is the heart of the router's navigation logic and is **not intended for direct public invocation**. It is called internally by `router.navigate()`, `router.start()`, and potentially by plugins that trigger navigation.
-
-### `router.subscribe`
-
-Subscribes a listener function to router state changes. The listener is called after every successful navigation or when the router's state is updated programmatically (though the latter is rare for direct `setState` calls unless they also trigger the subscription flow).
-
-**Signature:**
-
-```typescript
-subscribe(listener: SubscribeFn | Listener): Unsubscribe | Subscription;
-```
-
-**Parameters:**
-
--   `listener`: `SubscribeFn | Listener`
-    A callback function or an observer object.
-    -   `SubscribeFn`: `(state: SubscribeState) => void`. The `SubscribeState` object usually contains `route` (the new current state) and `previousRoute` (the state before the transition).
-    -   `Listener`: An object with a `next(state: SubscribeState)` method (RxJS-like observer pattern).
-
-**Returns:**
-
--   `Unsubscribe | Subscription`: 
-    - If a simple `SubscribeFn` is passed, it returns an `Unsubscribe` function `() => void` to remove the listener.
-    - If an RxJS-style `Listener` object is passed, it might return a `Subscription` object (also typically having an `unsubscribe()` method).
-
-**Example:**
-
-```typescript
-const myStateListener = (subscriptionState) => {
-  const { route, previousRoute } = subscriptionState;
-  console.log('[Listener] Route changed!');
-  console.log('  New route:', route.name, route.params);
-  if (previousRoute) {
-    console.log('  Old route:', previousRoute.name, previousRoute.params);
-  }
-  // Update UI, fetch data, etc., based on route
-};
-
-const unsubscribeListener = router.subscribe(myStateListener);
-
-// Example with an RxJS-like observer
-const myObserver = {
-  next: (subscriptionState) => {
-    console.log('[Observer] New state:', subscriptionState.route.name);
-  },
-  error: (err) => { /* ... */, // Optional: if router supports error notifications here
-  complete: () => { /* ... */ } // Optional: if router supports completion notifications here
-};
-
-const subscriptionObject = router.subscribe(myObserver);
-
-// To stop listening:
-// unsubscribeListener();
-// subscriptionObject.unsubscribe(); // If it returns a Subscription object
+-   An array containing two objects: the first for `canActivate` functions and the second for `canDeactivate`

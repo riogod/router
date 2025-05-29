@@ -171,6 +171,20 @@ export class RouteNode {
     return this
   }
 
+  /**
+   * Removes a direct child RouteNode by its name.
+   * If the name is a composite (e.g., 'parent.child'), it will attempt to remove 'parent' from this node's children.
+   * 
+   * @param name The name of the child node to remove.
+   * @returns True if the child node was found and removed, false otherwise.
+   */
+  public removeNode(name: string): boolean {
+    const targetName = name.split('.')[0];
+    const initialChildrenCount = this.children.length;
+    this.children = this.children.filter(child => child.name !== targetName);
+    return this.children.length < initialChildrenCount;
+  }
+
   public getPath(routeName: string): string | null {
     const segmentsByName = this.getSegmentsByName(routeName)
 
@@ -247,7 +261,7 @@ export class RouteNode {
     const segments = this.getSegmentsByName(routeName)
 
     if (!segments) {
-      throw new Error(`[route-node][buildPath] '{routeName}' is not defined`)
+      throw new Error(`[route-node][buildPath] '${routeName}' is not defined`);
     }
 
     return buildPathFromSegments(segments, params, options)
