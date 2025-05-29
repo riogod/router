@@ -1,14 +1,20 @@
-import { createRouter, type Route, type Router } from '@riogz/router';
+import { createRouter, type Route, type Router, type DefaultDependencies } from '@riogz/router';
 import { RouterProvider, Link, RouteNode, useRoute } from '@riogz/react-router';
 import browserPlugin from '@riogz/router-plugin-browser';
 import loggerPlugin from '@riogz/router-plugin-logger';
 
-const routes: Route[] = [
+
+interface Dependencies extends DefaultDependencies {
+  my_dep: string;
+  router: Router<Dependencies>;
+}
+
+const routes: Route<Dependencies>[] = [
   {
     name: 'home', 
     path: '/home',
-    onEnterNode: async (_state, _fromState, _deps) => {
-      console.log('[Route] onEnterNode callback');
+    onEnterNode: async (_state, _fromState, deps) => {
+      console.log('[Route] onEnterNode callback', deps.my_dep);
     },
     onExitNode: async (_state, _fromState, _deps) => {
       console.log('[Route] onExitNode callback');
@@ -62,11 +68,13 @@ const routes: Route[] = [
 ];
 
 // Инициализация роутера с плагинами ДО start
-const router: Router = createRouter(routes, {
+const router: Router<Dependencies> = createRouter(routes, {
   allowNotFound: true
 });
 router.usePlugin(loggerPlugin);
 router.usePlugin(browserPlugin());
+router.setDependency("my_dep", "my_dep_value");
+router.setDependency("router", router);
 router.start();
 
 console.log('[router-demo] Router started');
