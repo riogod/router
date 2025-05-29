@@ -34,6 +34,8 @@ export interface Route<
     canActivate?: ActivationFnFactory<Dependencies>
     /** Route name to forward to instead of rendering this route */
     forwardTo?: string
+    /** Automatically redirect to the first accessible child route when this route is accessed */
+    redirectToFirstAllowNode?: boolean
     /** Child routes nested under this route */
     children?: Array<Route<Dependencies>>
     /** Function to encode route parameters before building URLs */
@@ -123,6 +125,8 @@ export interface Config {
     defaultParams: Record<string, any>
     /** Route forwarding mappings */
     forwardMap: Record<string, any>
+    /** Routes that should redirect to first accessible child */
+    redirectToFirstAllowNodeMap?: Record<string, boolean>
 }
 
 /**
@@ -263,6 +267,9 @@ export interface Router<
     registerOnExitNode(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
     registerOnNodeInActiveChain(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
     registerBrowserTitle(name: string, handler: string | ((state: State, deps: Dependencies) => Promise<string>)): Router<Dependencies>
+
+    // Internal method for redirectToFirstAllowNode functionality
+    findFirstAccessibleChild(routeName: string, params?: any): Promise<string | null>
 
     usePlugin(...plugins: Array<PluginFactory<Dependencies>>): Unsubscribe
     addPlugin(plugin: Plugin): Router<Dependencies>

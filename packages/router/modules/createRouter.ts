@@ -1,4 +1,4 @@
-import { Router, Route, Options, DefaultDependencies } from './types/router'
+import { Router, Route, Options, DefaultDependencies, Config } from './types/router'
 
 import withOptions from './core/options'
 import withRoutes from './core/routes'
@@ -71,11 +71,12 @@ const createRouter = <
     options: Partial<Options> = {},
     dependencies: Dependencies = {} as Dependencies
 ): Router<Dependencies> => {
-    const config = {
+    const config: Config = {
         decoders: {},
         encoders: {},
         defaultParams: {},
-        forwardMap: {}
+        forwardMap: {},
+        redirectToFirstAllowNodeMap: {}
     }
 
     return pipe<Dependencies>(

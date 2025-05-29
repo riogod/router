@@ -96,6 +96,12 @@ export default function withRoutes<Dependencies>(
 
             if (route.forwardTo) router.forward(route.name, route.forwardTo)
 
+            // Handle redirectToFirstAllowNode
+            if (route.redirectToFirstAllowNode) {
+                router.config.redirectToFirstAllowNodeMap = router.config.redirectToFirstAllowNodeMap || {}
+                router.config.redirectToFirstAllowNodeMap[route.name] = true
+            }
+
             if (route.decodeParams)
                 router.config.decoders[route.name] = route.decodeParams
 
@@ -120,6 +126,84 @@ export default function withRoutes<Dependencies>(
         }
 
         router.rootNode = rootNode
+
+        /**
+         * Find the first accessible child route for redirectToFirstAllowNode functionality.
+         * 
+         * @param routeName - Parent route name
+         * @param params - Route parameters
+         * @returns Promise resolving to first accessible child route name or null
+         * 
+         * @internal
+         */
+        router.findFirstAccessibleChild = async (routeName, params = {}) => {
+            //@ts-ignore TODO: router.rootNode might not have getSegmentsByName, investigate type
+            const segments = router.rootNode.getSegmentsByName(routeName)
+            if (!segments || segments.length === 0) {
+                return null
+            }
+
+            const targetNode = segments[segments.length - 1]
+            if (!targetNode || !targetNode.children || targetNode.children.length === 0) {
+                return null
+            }
+
+            const [, canActivateFunctions] = router.getLifecycleFunctions()
+
+            // Check each child route for accessibility
+            for (const childNode of targetNode.children) {
+                const childName = routeName + '.' + childNode.name;
+
+                // Build state for child route
+                const childState = router.buildState(childName, params);
+                if (!childState) {
+                    continue;
+                }
+
+                const fullChildState = router.makeState(
+                    childState.name,
+                    childState.params,
+                    router.buildPath(childState.name, childState.params)
+                );
+
+                // Check if child route can be activated
+                const canActivateHandler = canActivateFunctions[childName];
+
+                if (canActivateHandler) {
+                    try {
+                        // Using null as fromState for this specific check, as router.getState() might be unstable
+                        // during a redirect chain resolution if canActivate itself causes navigation events.
+                        const canActivateOutcome = await new Promise<boolean>((resolvePromise, rejectPromise) => {
+                            try {
+                                canActivateHandler(fullChildState, null, (err) => {
+                                    if (err) {
+                                        resolvePromise(false);
+                                    } else {
+                                        resolvePromise(true);
+                                    }
+                                });
+                            } catch (syncError) {
+                                resolvePromise(false);
+                            }
+                        });
+                        
+                        if (canActivateOutcome) {
+                            return childName;
+                        }
+                    } catch (error) {
+                        // This catch block would be for errors thrown by `await new Promise` itself,
+                        // or unhandled rejections if we were to use rejectPromise and not catch it.
+                        // console.error(`Error during canActivate check for ${childName}:`, error);
+                        continue; // Skip this route if any error occurs during its canActivate evaluation
+                    }
+                } else {
+                    // No canActivate guard, route is accessible
+                    return childName;
+                }
+            }
+
+            return null
+        }
 
         /**
          * Add routes to the router dynamically.
