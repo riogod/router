@@ -49,7 +49,7 @@ const routes: Route<Dependencies>[] = [
     children: [
       {
         name: 'edit', 
-        browserTitle: async (state, deps) => `Редактировать профиль пользователя ${state.params.userId}`, 
+        browserTitle: async (state, _deps) => `Редактировать профиль пользователя ${state.params.userId}`, 
         path: '/edit', 
         onEnterNode: async (_state, _fromState) => {
           console.log('[Route] onEnterNode callback');
