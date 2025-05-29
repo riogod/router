@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, ReactNode } from 'react'
 import { UnsubscribeFn, RouteState } from './types'
-import { Router } from '@riogz/router'
+import { Router, type DefaultDependencies } from '@riogz/router'
 import { routerContext, routeContext } from './context'
 
 /**
@@ -33,10 +33,11 @@ export function shouldSubscribeToRouter() {
  * Props for the RouterProvider component.
  * 
  * @interface RouteProviderProps
+ * @template Dependencies - Type of dependencies injected into the router
  */
-export interface RouteProviderProps {
+export interface RouteProviderProps<Dependencies extends DefaultDependencies = DefaultDependencies> {
     /** The router instance to provide to child components */
-    router: Router
+    router: Router<Dependencies>
     /** Child components that will have access to router context */
     children: ReactNode
 }
@@ -54,7 +55,8 @@ export interface RouteProviderProps {
  * - Route state updates and propagation
  * - Context value optimization
  * 
- * @param {RouteProviderProps} props - Component props
+ * @template Dependencies - Type of dependencies injected into the router
+ * @param {RouteProviderProps<Dependencies>} props - Component props
  * @returns {React.ReactElement} Provider component wrapping children
  * 
  * @example
@@ -107,7 +109,7 @@ export interface RouteProviderProps {
  * }
  * ```
  */
-const RouterProvider: React.FC<RouteProviderProps> = ({ router, children }) => {
+function RouterProvider<Dependencies extends DefaultDependencies = DefaultDependencies>({ router, children }: RouteProviderProps<Dependencies>) {
     const [routeState, setRouteState] = useState<RouteState>(() => ({
         route: router.getState(),
         previousRoute: null,
@@ -121,10 +123,10 @@ const RouterProvider: React.FC<RouteProviderProps> = ({ router, children }) => {
 
         const listener = ({ route, previousRoute }: { route: any; previousRoute: any }) => {
             setRouteState({
-                    route,
+                route,
                 previousRoute,
             })
-                }
+        }
 
         // Подписываемся на изменения роутера
         const unsubscribe = router.subscribe(listener) as UnsubscribeFn
@@ -133,17 +135,17 @@ const RouterProvider: React.FC<RouteProviderProps> = ({ router, children }) => {
         return () => {
             if (unsubscribe) {
                 unsubscribe()
+            }
         }
-    }
     }, [router]) // Перезапускаем эффект, если экземпляр router изменился
 
-        return (
+    return (
         <routerContext.Provider value={router}>
             <routeContext.Provider value={{ router, ...routeState }}>
                 {children}
-                </routeContext.Provider>
-            </routerContext.Provider>
-        )
+            </routeContext.Provider>
+        </routerContext.Provider>
+    )
 }
 
 export default RouterProvider

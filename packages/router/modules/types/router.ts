@@ -29,7 +29,7 @@ export interface Route<
     /** URL path pattern with optional parameters (e.g., '/users/:id') */
     path: string
     /** Browser title for the route - can be static string or dynamic function */
-    browserTitle?: string | ((state: State) => Promise<string>)
+    browserTitle?: string | ((state: State, deps: Dependencies) => Promise<string>)
     /** Guard function to control route activation */
     canActivate?: ActivationFnFactory<Dependencies>
     /** Route name to forward to instead of rendering this route */
@@ -43,11 +43,11 @@ export interface Route<
     /** Default parameter values for this route */
     defaultParams?: Params
     /** Lifecycle hook called when entering this route */
-    onEnterRoute?: (state: State, fromState: State) => Promise<void>
+    onEnterNode?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
     /** Lifecycle hook called when exiting this route */
-    onExitRoute?: (state: State, fromState: State) => Promise<void>
+    onExitNode?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
     /** Lifecycle hook called when this route is in the active chain */
-    onRouteInActiveChain?: (state: State, fromState: State) => Promise<void>
+    onNodeInActiveChain?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
 }
 
 /**
@@ -246,23 +246,23 @@ export interface Router<
     ]
 
     getRouteLifecycleFactories(): {
-        onEnterRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
-        onExitRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
-        onRouteInActiveChain: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onEnterNode: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onExitNode: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onNodeInActiveChain: { [key: string]: (state: State, fromState: State) => Promise<void> }
     }
     getRouteLifecycleFunctions(): {
-        onEnterRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
-        onExitRoute: { [key: string]: (state: State, fromState: State) => Promise<void> }
-        onRouteInActiveChain: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onEnterNode: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onExitNode: { [key: string]: (state: State, fromState: State) => Promise<void> }
+        onNodeInActiveChain: { [key: string]: (state: State, fromState: State) => Promise<void> }
     }
 
     getBrowserTitleFunctions(): { [key: string]: string | ((state: State) => Promise<string>) }
 
     // Internal methods for registering route lifecycle hooks
-    registerOnEnterRoute(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
-    registerOnExitRoute(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
-    registerOnRouteInActiveChain(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
-    registerBrowserTitle(name: string, handler: string | ((state: State) => Promise<string>)): Router<Dependencies>
+    registerOnEnterNode(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
+    registerOnExitNode(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
+    registerOnNodeInActiveChain(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
+    registerBrowserTitle(name: string, handler: string | ((state: State, deps: Dependencies) => Promise<string>)): Router<Dependencies>
 
     usePlugin(...plugins: Array<PluginFactory<Dependencies>>): Unsubscribe
     addPlugin(plugin: Plugin): Router<Dependencies>

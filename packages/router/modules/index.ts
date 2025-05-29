@@ -26,6 +26,8 @@ export type {
     ActivationFn,
     /** Factory function for creating activation functions */
     ActivationFnFactory,
+    /** Default type for dependency injection */
+    DefaultDependencies,
     /** Main router interface */
     Router,
     /** Plugin interface for extending router functionality */
@@ -34,6 +36,8 @@ export type {
     PluginFactory,
     /** Middleware function signature */
     Middleware,
+    /** Factory function for creating middleware */
+    MiddlewareFactory,
     /** State object passed to subscribers */
     SubscribeState,
     /** Subscription callback function */

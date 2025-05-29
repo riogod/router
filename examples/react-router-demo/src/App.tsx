@@ -1,50 +1,66 @@
-import { createRouter, type Route, type Router } from '@riogz/router';
+import { createRouter, type Route, type Router, type DefaultDependencies } from '@riogz/router';
 import { RouterProvider, Link, RouteNode, useRoute } from '@riogz/react-router';
 import browserPlugin from '@riogz/router-plugin-browser';
 import loggerPlugin from '@riogz/router-plugin-logger';
 
-const routes: Route[] = [
+
+interface Dependencies extends DefaultDependencies {
+  my_dep: string;
+  router: Router<Dependencies>;
+}
+
+const routes: Route<Dependencies>[] = [
   {
     name: 'home', 
-    path: '/', 
-    onEnterRoute: async (_state, _fromState) => {
-      console.log('[Route] onEnterRoute callback');
-    }, 
-    onExitRoute: async (_state, _fromState) => {
-      console.log('[Route] onExitRoute callback');
+    path: '/home',
+    onEnterNode: async (_state, _fromState, deps) => {
+      console.log('[Route] onEnterNode callback', deps.my_dep);
+    },
+    onExitNode: async (_state, _fromState, _deps) => {
+      console.log('[Route] onExitNode callback');
     }
   },
   {
     name: 'about', 
-    path: '/about', 
-    onEnterRoute: async (_state, _fromState) => {
-      console.log('[Route] onEnterRoute callback');
+    path: '/about',
+    onEnterNode: async (_state, _fromState) => {
+      console.log('[Route] onEnterNode callback');
+    }
+  },
+  {
+    name: 'contact',
+    path: '/contact', 
+    onEnterNode: async (_state, _fromState) => {
+      console.log('[Route] onEnterNode callback');
+    },
+    onNodeInActiveChain: async (_state, _fromState, _deps) => {
+      console.log('[Route] onNodeInActiveChain callback');
     }
   },
   {
     name: 'profile', 
     path: '/profile/:userId', 
-    onEnterRoute: async (_state, _fromState) => {
-      console.log('[Route] onEnterRoute callback');
+    onEnterNode: async (_state, _fromState) => {
+      console.log('[Route] onEnterNode callback');
     }, 
-    onRouteInActiveChain: async (_state, _fromState) => {
-      console.log('[Route] onRouteInActiveChain callback');
+    onNodeInActiveChain: async (_state, _fromState) => {
+      console.log('[Route] onNodeInActiveChain callback');
     }, 
     children: [
       {
         name: 'edit', 
-        browserTitle: async (state) => `Редактировать профиль пользователя ${state.params.userId}`, 
+        browserTitle: async (state, _deps) => `Редактировать профиль пользователя ${state.params.userId}`, 
         path: '/edit', 
-        onEnterRoute: async (_state, _fromState) => {
-          console.log('[Route] onEnterRoute callback');
+        onEnterNode: async (_state, _fromState) => {
+          console.log('[Route] onEnterNode callback');
         }
       },
       {
         name: 'view', 
         browserTitle: 'Профиль пользователя', 
         path: '/view', 
-        onEnterRoute: async (_state, _fromState) => {
-          console.log('[Route] onEnterRoute callback');
+        onEnterNode: async (_state, _fromState) => {
+          console.log('[Route] onEnterNode callback');
         }
       }
     ]
@@ -52,11 +68,13 @@ const routes: Route[] = [
 ];
 
 // Инициализация роутера с плагинами ДО start
-const router: Router = createRouter(routes, {
+const router: Router<Dependencies> = createRouter(routes, {
   allowNotFound: true
 });
 router.usePlugin(loggerPlugin);
 router.usePlugin(browserPlugin());
+router.setDependency("my_dep", "my_dep_value");
+router.setDependency("router", router);
 router.start();
 
 console.log('[router-demo] Router started');

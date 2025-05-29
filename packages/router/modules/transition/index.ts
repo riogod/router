@@ -9,10 +9,10 @@ import { State, NavigationOptions, DoneFn } from '../types/base'
  * 
  * This function orchestrates the entire navigation lifecycle including:
  * - Route deactivation guards (canDeactivate)
- * - Route exit hooks (onExitRoute)
+ * - Route exit hooks (onExitNode)
  * - Route activation guards (canActivate)
- * - Route enter hooks (onEnterRoute)
- * - Active chain hooks (onRouteInActiveChain)
+ * - Route enter hooks (onEnterNode)
+ * - Active chain hooks (onNodeInActiveChain)
  * - Browser title updates
  * - Middleware execution
  * 
@@ -62,9 +62,9 @@ export default function transition(
     ] = router.getLifecycleFunctions()
     const middlewareFunctions = router.getMiddlewareFunctions()
     const {
-        onEnterRoute: onEnterRouteFunctions,
-        onExitRoute: onExitRouteFunctions,
-        onRouteInActiveChain: onRouteInActiveChainFunctions
+        onEnterNode: onEnterNodeFunctions,
+        onExitNode: onExitNodeFunctions,
+        onNodeInActiveChain: onNodeInActiveChainFunctions
     } = router.getRouteLifecycleFunctions()
     const browserTitleFunctions = router.getBrowserTitleFunctions()
     
@@ -108,7 +108,7 @@ export default function transition(
     const asyncBase = { isCancelled, toState, fromState }
     const { toDeactivate, toActivate, intersection } = transitionPath(toState, fromState)
     
-    // Calculate routes that remain on the path (for onRouteInActiveChain)
+    // Calculate routes that remain on the path (for onNodeInActiveChain)
     const fromStateIds = fromState ? nameToIDs(fromState.name) : []
     const toStateIds = nameToIDs(toState.name)
     const intersectionIndex = intersection ? fromStateIds.indexOf(intersection) : -1
@@ -118,8 +118,8 @@ export default function transition(
         // Normal transition - routes that remain on the path
         onPath = intersectionIndex >= 0 ? fromStateIds.slice(0, intersectionIndex + 1) : []
     } else {
-        // Initial navigation - all parent routes in toState hierarchy should trigger onRouteInActiveChain
-        // (excluding the final route which will trigger onEnterRoute)
+        // Initial navigation - all parent routes in toState hierarchy should trigger onNodeInActiveChain
+        // (excluding the final route which will trigger onEnterNode)
         onPath = toStateIds.slice(0, -1)
     }
 
@@ -183,12 +183,12 @@ export default function transition(
           }
 
     /** Handle route exit lifecycle hooks */
-    const onExitRoute = !fromState || !toDeactivate.length
+    const onExitNode = !fromState || !toDeactivate.length
         ? []
         : (toState, fromState, cb) => {
               const onExitPromises = toDeactivate
-                  .filter(name => onExitRouteFunctions[name])
-                  .map(name => onExitRouteFunctions[name](toState, fromState))
+                  .filter(name => onExitNodeFunctions[name])
+                  .map(name => onExitNodeFunctions[name](toState, fromState))
 
               Promise.all(onExitPromises)
                   .then(() => cb(null))
@@ -196,12 +196,12 @@ export default function transition(
           }
 
     /** Handle route enter lifecycle hooks */
-    const onEnterRoute = isUnknownRoute || !toActivate.length
+    const onEnterNode = isUnknownRoute || !toActivate.length
         ? []
         : (toState, fromState, cb) => {
               const onEnterPromises = toActivate
-                  .filter(name => onEnterRouteFunctions[name])
-                  .map(name => onEnterRouteFunctions[name](toState, fromState))
+                  .filter(name => onEnterNodeFunctions[name])
+                  .map(name => onEnterNodeFunctions[name](toState, fromState))
 
               Promise.all(onEnterPromises)
                   .then(() => cb(null))
@@ -209,14 +209,14 @@ export default function transition(
           }
 
     /** Handle active chain lifecycle hooks for routes that remain on the path */
-    const onRouteInActiveChain = !onPath.length
+    const onNodeInActiveChain = !onPath.length
         ? []
         : (toState, fromState, cb) => {
-              const onRouteInActiveChainPromises = onPath
-                  .filter(name => onRouteInActiveChainFunctions[name])
-                  .map(name => onRouteInActiveChainFunctions[name](toState, fromState))
+              const onNodeInActiveChainPromises = onPath
+                  .filter(name => onNodeInActiveChainFunctions[name])
+                  .map(name => onNodeInActiveChainFunctions[name](toState, fromState))
 
-              Promise.all(onRouteInActiveChainPromises)
+              Promise.all(onNodeInActiveChainPromises)
                   .then(() => cb(null))
                   .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
           }
@@ -281,10 +281,10 @@ export default function transition(
     // Build the execution pipeline in the correct order
     const pipeline = []
         .concat(canDeactivate)
-        .concat(onExitRoute)
+        .concat(onExitNode)
         .concat(canActivate)
-        .concat(onEnterRoute)
-        .concat(onRouteInActiveChain)
+        .concat(onEnterNode)
+        .concat(onNodeInActiveChain)
         .concat(updateBrowserTitle)
         .concat(middleware)
 
