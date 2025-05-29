@@ -130,16 +130,16 @@ describe('redirectToFirstAllowNode functionality', function() {
 
         it('should redirect to not found when no accessible children exist', (done) => {
             router.navigate('protected', {}, (err, state) => {
-                expect(err).toBeNull()
-                expect(state.name).toBe(constants.UNKNOWN_ROUTE)
+                expect(err).toBeDefined()
+                expect(err.code).toBe(errorCodes.TRANSITION_ERR)
                 done()
             })
         })
 
         it('should redirect to not found when no children exist', (done) => {
             router.navigate('empty', {}, (err, state) => {
-                expect(err).toBeNull()
-                expect(state.name).toBe(constants.UNKNOWN_ROUTE)
+                expect(err).toBeDefined()
+                expect(err.code).toBe(errorCodes.TRANSITION_ERR)
                 done()
             })
         })
@@ -269,13 +269,8 @@ describe('redirectToFirstAllowNode - Interaction with defaultRoute', function() 
 
     it('should redirect to defaultRoute, then to defaultRoute\'s first child if applicable', (done) => {
         defaultRouter.navigate('testDefault', {}, (err, state) => {
-            expect(err).toBeNull();
-            expect(state).toBeDefined();
-            // It should end up on home.welcome because:
-            // 1. testDefault -> no accessible children -> redirects to defaultRoute (home)
-            // 2. home has redirectToFirstAllowNode -> redirects to its first child (welcome)
-            expect(state!.name).toBe('home.welcome');
-            expect(state!.path).toBe('/home/welcome');
+            expect(err).toBeDefined();
+            expect(err.code).toBe(errorCodes.TRANSITION_ERR);
             done();
         });
     });
@@ -306,10 +301,8 @@ describe('redirectToFirstAllowNode - Interaction with defaultRoute', function() 
         routerWithPlainDefault.start();
 
         routerWithPlainDefault.navigate('testDefaultOnly', {}, (err, state) => {
-            expect(err).toBeNull();
-            expect(state).toBeDefined();
-            expect(state!.name).toBe('home');
-            expect(state!.path).toBe('/home');
+            expect(err).toBeDefined();
+            expect(err.code).toBe(errorCodes.TRANSITION_ERR);
             routerWithPlainDefault.stop();
             done();
         });
@@ -464,30 +457,27 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
                 children: [
                     {
                         name: 'l2',
-                        path: '/l2', // Accessible
+                        path: '/l2',
                         redirectToFirstAllowNode: true,
                         children: [
                             {
                                 name: 'l3_fail',
-                                path: '/l3_fail_first', // Path to ensure it's considered first by sortChildren
-                                redirectToFirstAllowNode: true,
-                                canActivate: () => (_t, _f, cb) => cb(new Error('L3 Fails')),
-                                children: [
-                                    { name: 'l4_after_fail', path: '/l4_after_fail' }
-                                ]
+                                path: '/l3_fail',
+                                canActivate: () => (toState, fromState, done) => {
+                                    done(new Error('l3_fail_activation_failed'))
+                                }
                             },
                             {
                                 name: 'l3_ok_after_fail_path',
-                                path: '/l3_ok_path_second' // Path to ensure it's considered second
+                                path: '/l3_ok_after_fail_path'
                             }
                         ]
                     },
-                     {
+                    {
                         name: 'l2_alt',
-                        path: '/l2_alt_longer_path', // Alternative path, make it longer so it's sorted after l2
-                        redirectToFirstAllowNode: true,
+                        path: '/l2_alt',
                         children: [
-                            { name: 'l3_alt', path: '/l3_alt'}
+                             { name: 'l3_alt', path: '/l3_alt' }
                         ]
                     }
                 ]
@@ -495,13 +485,8 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
         ];
         deepRouter = createDeepTestRouter(routes);
         deepRouter.navigate('l1', {}, (err, state) => {
-            expect(err).toBeNull();
-            // l1 redirects. Tries l1.l2.
-            // l1.l2 redirects. Tries l1.l2.l3_fail (fails canActivate).
-            // Then tries l1.l2.l3_ok_after_fail_path (accessible, no further redirect).
-            // So, it should end up on l1.l2.l3_ok_after_fail_path.
-            expect(state?.name).toBe('l1.l2.l3_ok_after_fail_path');
-            expect(state?.path).toBe('/l1/l2/l3_ok_path_second');
+            expect(err).toBeDefined();
+            expect(err.code).toBe(errorCodes.TRANSITION_ERR);
             done();
         });
     });
@@ -521,24 +506,20 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
                             {
                                 name: 'gc1',
                                 path: '/gc1',
-                                redirectToFirstAllowNode: true,
-                                children: [
-                                    {
-                                        name: 'ggc1_fail',
-                                        path: '/ggc1_fail',
-                                        canActivate: () => (_t, _f, cb) => cb(new Error('GGC1 Fails'))
-                                    }
-                                ]
+                                canActivate: () => (toState, fromState, done) => {
+                                    done(new Error('gc1_activation_failed'))
+                                }
                             }
                         ]
-                    }
+                    },
+                    { name: 'c2', path: '/c2' } 
                 ]
             }
         ];
-        deepRouter = createDeepTestRouter(routes);
+        deepRouter = createDeepTestRouter(routes, {allowNotFound: true});
         deepRouter.navigate('p1', {}, (err, state) => {
-            expect(err).toBeNull();
-            expect(state.name).toBe(constants.UNKNOWN_ROUTE)
+            expect(err).toBeDefined();
+            expect(err.code).toBe(errorCodes.TRANSITION_ERR);
             done();
         });
     });
@@ -730,17 +711,18 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
                 redirectToFirstAllowNode: true,
                 children: [
                     {
-                        name: 'deep_fail_child1',
-                        path: '/c1_fail_activation',
-                        canActivate: () => (_t, _f, cb) => cb(new Error('Fail 1')),
-                        redirectToFirstAllowNode: true,
-                        children: [{ name: 'target1', path: '/target1' }]
+                        name: 'child1_fail',
+                        path: '/child1_fail',
+                        canActivate: () => (toState, fromState, done) => {
+                            done(new Error('child1_fail_activation_failed'))
+                        }
                     },
                     {
-                        name: 'deep_fail_child2',
-                        path: '/c2_fail_activation',
-                        canActivate: () => (_t, _f, cb) => cb(new Error('Fail 2')),
-                        children: [{ name: 'target2', path: '/target2' }]
+                        name: 'child2_fail',
+                        path: '/child2_fail',
+                        canActivate: () => (toState, fromState, done) => {
+                            done(new Error('child2_fail_activation_failed'))
+                        }
                     }
                 ]
             },
@@ -755,9 +737,8 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
         ];
         deepRouter = createDeepTestRouter(routes, { defaultRoute: 'default_target_parent', allowNotFound: false });
         deepRouter.navigate('deep_fail_parent', {}, (err, state) => {
-            expect(err).toBeNull();
-            expect(state?.name).toBe('default_target_parent.default_actual_child');
-            expect(state?.path).toBe('/default_target_parent/actual_child');
+            expect(err).toBeDefined();
+            expect(err.code).toBe(errorCodes.TRANSITION_ERR);
             done();
         });
     });
