@@ -32,24 +32,26 @@ export interface Route<
     browserTitle?: string | ((state: State, deps: Dependencies) => Promise<string>)
     /** Guard function to control route activation */
     canActivate?: ActivationFnFactory<Dependencies>
+    /** Guard function to control route deactivation */
+    canDeactivate?: ActivationFnFactory<Dependencies>
     /** Route name to forward to instead of rendering this route */
     forwardTo?: string
     /** Automatically redirect to the first accessible child route when this route is accessed */
     redirectToFirstAllowNode?: boolean
     /** Child routes nested under this route */
-    children?: Array<Route<Dependencies>>
+    children?: Array<Route<Dependencies>> | RouteNode
     /** Function to encode route parameters before building URLs */
-    encodeParams?(stateParams: Params): Params
+    encodeParams?: (params: Params) => Params
     /** Function to decode route parameters after parsing URLs */
-    decodeParams?(pathParams: Params): Params
+    decodeParams?: (params: Params) => Params
     /** Default parameter values for this route */
     defaultParams?: Params
     /** Lifecycle hook called when entering this route */
-    onEnterNode?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
+    onEnterNode?: (toState: State, fromState: State | null, deps: Dependencies) => Promise<void>
     /** Lifecycle hook called when exiting this route */
-    onExitNode?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
+    onExitNode?: (toState: State | null, fromState: State, deps: Dependencies) => Promise<void>
     /** Lifecycle hook called when this route is in the active chain */
-    onNodeInActiveChain?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
+    onNodeInActiveChain?: (toState: State, fromState: State | null, deps: Dependencies) => Promise<void>
 }
 
 /**
@@ -106,7 +108,7 @@ export type ActivationFn = (
  */
 export type ActivationFnFactory<
     Dependencies extends DefaultDependencies = DefaultDependencies
-> = (router: Router, dependencies?: Dependencies) => ActivationFn
+> = (router: Router<Dependencies>, dependencies?: Dependencies) => ActivationFn
 
 /**
  * Default type for dependency injection - allows any key-value pairs.

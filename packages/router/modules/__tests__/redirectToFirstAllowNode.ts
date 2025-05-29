@@ -1,6 +1,7 @@
 import { errorCodes, constants } from '../'
 import { createTestRouter, omitMeta } from './helpers'
 import createRouter from '../createRouter'
+import { findFirstAccessibleChildAtPath } from '../core/routes'
 
 describe('redirectToFirstAllowNode functionality', function() {
     let router
@@ -84,27 +85,27 @@ describe('redirectToFirstAllowNode functionality', function() {
     })
 
     it('should find first accessible child', async () => {
-        const firstChild = await router.findFirstAccessibleChild('app')
+        const firstChild = await findFirstAccessibleChildAtPath(router, 'app')
         expect(firstChild).toBe('app.dashboard')
     })
 
     it('should skip inaccessible children and find first accessible one', async () => {
-        const firstChild = await router.findFirstAccessibleChild('admin')
+        const firstChild = await findFirstAccessibleChildAtPath(router, 'admin')
         expect(firstChild).toBe('admin.reports')
     })
 
     it('should return null if no accessible children found', async () => {
-        const firstChild = await router.findFirstAccessibleChild('protected')
+        const firstChild = await findFirstAccessibleChildAtPath(router, 'protected')
         expect(firstChild).toBeNull()
     })
 
     it('should return null if no children exist', async () => {
-        const firstChild = await router.findFirstAccessibleChild('empty')
+        const firstChild = await findFirstAccessibleChildAtPath(router, 'empty')
         expect(firstChild).toBeNull()
     })
 
     it('should return null for non-existent route', async () => {
-        const firstChild = await router.findFirstAccessibleChild('nonexistent')
+        const firstChild = await findFirstAccessibleChildAtPath(router, 'nonexistent')
         expect(firstChild).toBeNull()
     })
 

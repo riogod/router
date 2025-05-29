@@ -3,55 +3,42 @@ import resolve from './resolve'
 import { constants, errorCodes } from '../constants'
 import { Router } from '../types/router'
 import { State, NavigationOptions, DoneFn } from '../types/base'
+import { findFirstAccessibleChildAtPath } from '../core/routes'
 
 /**
  * Recursively resolves a state by checking for redirectToFirstAllowNode flags.
  * If a state has the flag, it finds the first accessible child and attempts to resolve that child.
  * This continues until a state without the flag is found or no accessible child can be found.
  */
-async function resolveRedirectChain(router: Router, currentState: State): Promise<State> {
-    if (currentState.name !== constants.UNKNOWN_ROUTE && router.config.redirectToFirstAllowNodeMap?.[currentState.name]) {
-        try {
-            const firstChildName = await router.findFirstAccessibleChild(currentState.name, currentState.params);
-            if (firstChildName) {
-                const childState = router.makeState(
-                    firstChildName,
-                    currentState.params,
-                    router.buildPath(firstChildName, currentState.params)
-                );
-                // Recursively resolve the child state
-                return resolveRedirectChain(router, childState);
-            } else {
-                // No accessible children found, handle based on router options
-                const options = router.getOptions();
-                if (options.allowNotFound) {
-                    return router.makeNotFoundState(currentState.path || '/');
-                } else {
-                    if (options.defaultRoute && currentState.name === options.defaultRoute) {
-                        return router.makeNotFoundState(currentState.path || '/');
-                    } else if (options.defaultRoute) {
-                        const defaultState = router.makeState(
-                            options.defaultRoute,
-                            {},
-                            router.buildPath(options.defaultRoute, {})
-                        );
-                        // Default route might also have redirect, so resolve it too
-                        return resolveRedirectChain(router, defaultState);
-                    } else {
-                        return router.makeNotFoundState(currentState.path || '/');
-                    }
-                }
-            }
-        } catch (err) {
-            // If findFirstAccessibleChild or makeState throws, propagate as a transition error
-            // or return a notFoundState if appropriate
-            console.error('Error during redirect chain resolution:', err);
-            // Depending on the error, you might want to throw or return a specific error state
-            // For now, let's assume it leads to a notFoundState if not handled otherwise
-            return router.makeNotFoundState(currentState.path || '/'); 
+async function resolveRedirectChain(router: Router, currentState: State | null): Promise<State | null> {
+    if (!currentState || currentState.name === constants.UNKNOWN_ROUTE) {
+        return currentState;
+    }
+
+    const { redirectToFirstAllowNodeMap } = router.config;
+    if (!redirectToFirstAllowNodeMap || !redirectToFirstAllowNodeMap[currentState.name]) {
+        return currentState;
+    }
+
+    // Вызываем импортированную функцию
+    const firstAccessibleChildName = await findFirstAccessibleChildAtPath(router, currentState.name, currentState.params);
+
+    if (firstAccessibleChildName) {
+        const childStateCandidate = router.buildState(firstAccessibleChildName, currentState.params);
+        if (childStateCandidate) {
+            const fullChildStateCandidate = router.makeState(
+                childStateCandidate.name,
+                childStateCandidate.params,
+                router.buildPath(childStateCandidate.name, childStateCandidate.params),
+                currentState.meta // Передаем meta от родителя
+            );
+            // Рекурсивно проверяем следующую ноду в цепочке
+            return resolveRedirectChain(router, fullChildStateCandidate);
         }
     }
-    // If no redirect is needed for the current state, return it as is
+    // Если нет доступного дочернего элемента или не удалось построить его состояние,
+    // или если дочерний элемент сам не имеет дальнейших перенаправлений,
+    // то текущее состояние (currentState) является концом этой конкретной ветки перенаправления.
     return currentState;
 }
 
