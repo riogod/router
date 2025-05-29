@@ -197,69 +197,87 @@ export default function withRouteLifecycle<Dependencies>(
     }
 
     /**
-     * Register an onEnterRoute lifecycle hook for a specific route.
+     * Register an onEnterNode lifecycle hook for a specific route.
      * 
      * This hook is called when entering the route, after guards have passed.
+     * The hook receives the current state, previous state, and router dependencies.
      * 
      * @param name - Route name
-     * @param handler - Lifecycle hook function
+     * @param handler - Lifecycle hook function that receives (toState, fromState, deps)
      * @returns Router instance for chaining
      * 
      * @example
      * ```typescript
-     * router.registerOnEnterRoute('user', (toState, fromState) => {
+     * router.registerOnEnterNode('user', (toState, fromState, deps) => {
      *   console.log(`Entering user ${toState.params.id}`)
+     *   deps.analytics.trackPageView(toState.name)
      * })
      * ```
      */
     router.registerOnEnterNode = (name, handler) => {
         onEnterNodeFactories[name] = handler
-        onEnterNodeFunctions[name] = handler
+        // Wrap handler to provide dependencies
+        onEnterNodeFunctions[name] = (toState, fromState) => {
+            const deps = router.getDependencies()
+            return handler(toState, fromState, deps)
+        }
         return router
     }
 
     /**
-     * Register an onExitRoute lifecycle hook for a specific route.
+     * Register an onExitNode lifecycle hook for a specific route.
      * 
      * This hook is called when leaving the route, before guards are checked.
+     * The hook receives the current state, next state, and router dependencies.
      * 
      * @param name - Route name
-     * @param handler - Lifecycle hook function
+     * @param handler - Lifecycle hook function that receives (toState, fromState, deps)
      * @returns Router instance for chaining
      * 
      * @example
      * ```typescript
-     * router.registerOnExitRoute('user', (toState, fromState) => {
+     * router.registerOnExitNode('user', (toState, fromState, deps) => {
      *   console.log(`Leaving user ${fromState.params.id}`)
+     *   deps.cleanup.cleanupUserData()
      * })
      * ```
      */
     router.registerOnExitNode = (name, handler) => {
         onExitNodeFactories[name] = handler
-        onExitNodeFunctions[name] = handler
+        // Wrap handler to provide dependencies
+        onExitNodeFunctions[name] = (toState, fromState) => {
+            const deps = router.getDependencies()
+            return handler(toState, fromState, deps)
+        }
         return router
     }
 
     /**
-     * Register an onRouteInActiveChain lifecycle hook for a specific route.
+     * Register an onNodeInActiveChain lifecycle hook for a specific route.
      * 
      * This hook is called for routes that remain active during navigation
      * (parent routes when navigating between child routes).
+     * The hook receives the current state, next state, and router dependencies.
      * 
      * @param name - Route name
-     * @param handler - Lifecycle hook function
+     * @param handler - Lifecycle hook function that receives (toState, fromState, deps)
      * @returns Router instance for chaining
      * 
      * @example
      * ```typescript
-     * router.registerOnRouteInActiveChain('app', (toState, fromState) => {
+     * router.registerOnNodeInActiveChain('app', (toState, fromState, deps) => {
      *   console.log('App route remains active during navigation')
+     *   deps.breadcrumbs.updateActiveChain(toState.name)
      * })
      * ```
      */
     router.registerOnNodeInActiveChain = (name, handler) => {
         onNodeInActiveChainFactories[name] = handler
-        onNodeInActiveChainFunctions[name] = handler
+        // Wrap handler to provide dependencies
+        onNodeInActiveChainFunctions[name] = (toState, fromState) => {
+            const deps = router.getDependencies()
+            return handler(toState, fromState, deps)
+        }
         return router
     }
 
@@ -267,6 +285,7 @@ export default function withRouteLifecycle<Dependencies>(
      * Register a browser title handler for a specific route.
      * 
      * The handler can be a string or function that returns the page title.
+     * Function handlers receive the current state and router dependencies.
      * 
      * @param name - Route name
      * @param handler - Title string or function that returns title
@@ -277,13 +296,27 @@ export default function withRouteLifecycle<Dependencies>(
      * // Static title
      * router.registerBrowserTitle('home', 'Home Page')
      * 
-     * // Dynamic title
-     * router.registerBrowserTitle('user', (state) => `User: ${state.params.name}`)
+     * // Dynamic title with dependencies
+     * router.registerBrowserTitle('user', (state, deps) => {
+     *   const userName = deps.userService.getUserName(state.params.id)
+     *   return `User: ${userName}`
+     * })
      * ```
      */
     router.registerBrowserTitle = (name, handler) => {
         browserTitleFactories[name] = handler
-        browserTitleFunctions[name] = handler
+        
+        if (typeof handler === 'function') {
+            // Wrap function handler to provide dependencies
+            browserTitleFunctions[name] = (state) => {
+                const deps = router.getDependencies()
+                return handler(state, deps)
+            }
+        } else {
+            // String handlers don't need dependencies
+            browserTitleFunctions[name] = handler
+        }
+        
         return router
     }
 

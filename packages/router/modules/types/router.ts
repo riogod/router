@@ -29,7 +29,7 @@ export interface Route<
     /** URL path pattern with optional parameters (e.g., '/users/:id') */
     path: string
     /** Browser title for the route - can be static string or dynamic function */
-    browserTitle?: string | ((state: State) => Promise<string>)
+    browserTitle?: string | ((state: State, deps: Dependencies) => Promise<string>)
     /** Guard function to control route activation */
     canActivate?: ActivationFnFactory<Dependencies>
     /** Route name to forward to instead of rendering this route */
@@ -43,11 +43,11 @@ export interface Route<
     /** Default parameter values for this route */
     defaultParams?: Params
     /** Lifecycle hook called when entering this route */
-    onEnterNode?: (state: State, fromState: State) => Promise<void>
+    onEnterNode?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
     /** Lifecycle hook called when exiting this route */
-    onExitNode?: (state: State, fromState: State) => Promise<void>
+    onExitNode?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
     /** Lifecycle hook called when this route is in the active chain */
-    onNodeInActiveChain?: (state: State, fromState: State) => Promise<void>
+    onNodeInActiveChain?: (state: State, fromState: State, deps: Dependencies) => Promise<void>
 }
 
 /**
@@ -259,10 +259,10 @@ export interface Router<
     getBrowserTitleFunctions(): { [key: string]: string | ((state: State) => Promise<string>) }
 
     // Internal methods for registering route lifecycle hooks
-    registerOnEnterNode(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
-    registerOnExitNode(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
-    registerOnNodeInActiveChain(name: string, handler: (state: State, fromState: State) => Promise<void>): Router<Dependencies>
-    registerBrowserTitle(name: string, handler: string | ((state: State) => Promise<string>)): Router<Dependencies>
+    registerOnEnterNode(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
+    registerOnExitNode(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
+    registerOnNodeInActiveChain(name: string, handler: (state: State, fromState: State, deps: Dependencies) => Promise<void>): Router<Dependencies>
+    registerBrowserTitle(name: string, handler: string | ((state: State, deps: Dependencies) => Promise<string>)): Router<Dependencies>
 
     usePlugin(...plugins: Array<PluginFactory<Dependencies>>): Unsubscribe
     addPlugin(plugin: Plugin): Router<Dependencies>

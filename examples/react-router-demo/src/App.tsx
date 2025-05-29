@@ -7,10 +7,10 @@ const routes: Route[] = [
   {
     name: 'home', 
     path: '/home',
-    onEnterNode: async (_state, _fromState) => {
+    onEnterNode: async (_state, _fromState, _deps) => {
       console.log('[Route] onEnterNode callback');
     },
-    onExitNode: async (_state, _fromState) => {
+    onExitNode: async (_state, _fromState, _deps) => {
       console.log('[Route] onExitNode callback');
     }
   },
@@ -19,6 +19,16 @@ const routes: Route[] = [
     path: '/about',
     onEnterNode: async (_state, _fromState) => {
       console.log('[Route] onEnterNode callback');
+    }
+  },
+  {
+    name: 'contact',
+    path: '/contact', 
+    onEnterNode: async (_state, _fromState) => {
+      console.log('[Route] onEnterNode callback');
+    },
+    onNodeInActiveChain: async (_state, _fromState, _deps) => {
+      console.log('[Route] onNodeInActiveChain callback');
     }
   },
   {
@@ -33,7 +43,7 @@ const routes: Route[] = [
     children: [
       {
         name: 'edit', 
-        browserTitle: async (state) => `Редактировать профиль пользователя ${state.params.userId}`, 
+        browserTitle: async (state, deps) => `Редактировать профиль пользователя ${state.params.userId}`, 
         path: '/edit', 
         onEnterNode: async (_state, _fromState) => {
           console.log('[Route] onEnterNode callback');
