@@ -142,8 +142,6 @@ export default function transition(
         ...(err instanceof Object ? err : { error: err })
     })
 
-    const asyncBase = { isCancelled, toState, fromState }
-
     resolveRedirectChain(router, toState)
         .then(resolvedToState => {
             // Check if cancellation happened during async redirect resolution
