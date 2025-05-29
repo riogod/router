@@ -66,8 +66,10 @@ function Home() {
   return <h2>Главная страница</h2>;
 }
 function About() {
+  const { route } = useRoute();
+  
   console.log('[RouteNode] About');
-  return <h2>О проекте</h2>;
+  return <h2>О проекте {route.name}</h2>;
 }
 function Profile({ userId }: { userId: string }) {
   console.log('[RouteNode] Profile', userId);
@@ -103,11 +105,9 @@ function AppLayout() {
       </Link>
     </nav>}
     <RouteNode nodeName="home">
-      {() => <Home />}
+      <Home />
     </RouteNode>
-    <RouteNode nodeName="about">
-      {() => <About />}
-    </RouteNode>
+    <RouteNode nodeName="about" children={About} />
     <RouteNode nodeName="profile">
       {({ route }) => <Profile userId={route.params.userId} />}
     </RouteNode>

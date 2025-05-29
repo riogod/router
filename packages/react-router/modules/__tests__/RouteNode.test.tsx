@@ -218,4 +218,154 @@ describe('RouteNode', () => {
 
     // Тест оптимизации обновлений (shouldUpdateNode) можно реализовать только через интеграционный тест с реальным изменением состояния,
     // либо через отдельный unit-тест InternalRouteNodeRenderer, если он экспортируется.
+
+    describe('children as ReactNode (not function)', () => {
+        it('рендерит JSX элемент как children', () => {
+            router = createFullTestRouter({ name: 'test', path: '/test' });
+            render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        <div data-testid="jsx-child">JSX Child</div>
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(screen.getByTestId('jsx-child')).toBeInTheDocument();
+        });
+
+        it('рендерит строку как children', () => {
+            router = createFullTestRouter({ name: 'test', path: '/test' });
+            render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        String Child
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(screen.getByText('String Child')).toBeInTheDocument();
+        });
+
+        it('рендерит число как children', () => {
+            router = createFullTestRouter({ name: 'test', path: '/test' });
+            render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        {42}
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(screen.getByText('42')).toBeInTheDocument();
+        });
+
+        it('рендерит массив элементов как children', () => {
+            router = createFullTestRouter({ name: 'test', path: '/test' });
+            render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        {[
+                            <span key="1" data-testid="item-1">Item 1</span>,
+                            <span key="2" data-testid="item-2">Item 2</span>
+                        ]}
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(screen.getByTestId('item-1')).toBeInTheDocument();
+            expect(screen.getByTestId('item-2')).toBeInTheDocument();
+        });
+
+        it('не рендерит ничего для null children', () => {
+            router = createFullTestRouter({ name: 'test', path: '/test' });
+            const { container } = render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        {null}
+                    </RouteNode>
+                </RouterProvider>
+            );
+            // Проверяем, что в контейнере нет дочерних элементов от RouteNode
+            expect(container.querySelector('[data-testid]')).toBeNull();
+            // Или проверяем, что контейнер содержит только RouterProvider без видимого контента
+            expect(container.textContent?.trim()).toBe('');
+        });
+
+        it('не рендерит ничего для undefined children', () => {
+            router = createFullTestRouter({ name: 'test', path: '/test' });
+            const { container } = render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        {undefined}
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(container.querySelector('[data-testid]')).toBeNull();
+            expect(container.textContent?.trim()).toBe('');
+        });
+
+        it('не рендерит ничего для boolean children', () => {
+            router = createFullTestRouter({ name: 'test', path: '/test' });
+            const { container } = render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        {true}
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(container.querySelector('[data-testid]')).toBeNull();
+            expect(container.textContent?.trim()).toBe('');
+
+            const { container: container2 } = render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="test">
+                        {false}
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(container2.querySelector('[data-testid]')).toBeNull();
+            expect(container2.textContent?.trim()).toBe('');
+        });
+
+        it('не рендерит children для неактивного узла', () => {
+            router = createFullTestRouter({ name: 'active', path: '/active' });
+            render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="inactive">
+                        <div data-testid="inactive-child">Should not render</div>
+                    </RouteNode>
+                </RouterProvider>
+            );
+            expect(screen.queryByTestId('inactive-child')).not.toBeInTheDocument();
+        });
+
+        it('переключается между ReactNode и function children при навигации', async () => {
+            const state1: State = { name: 'node-child', path: '/node-child', params: {}, meta: { id: 1, params: {}, options: {}, redirected: false } };
+            const state2: State = { name: 'func-child', path: '/func-child', params: {}, meta: { id: 2, params: {}, options: {}, redirected: false } };
+
+            router = createFullTestRouter(state1);
+
+            const { queryByTestId, findByTestId } = render(
+                <RouterProvider router={router}>
+                    <RouteNode nodeName="node-child">
+                        <div data-testid="node-content">ReactNode Content</div>
+                    </RouteNode>
+                    <RouteNode nodeName="func-child">
+                        {(ctx: RouteContext) => <div data-testid="func-content">Function Content: {ctx.route.name}</div>}
+                    </RouteNode>
+                </RouterProvider>
+            );
+
+            // Начальное состояние: ReactNode
+            expect(await findByTestId('node-content')).toBeInTheDocument();
+            expect(queryByTestId('func-content')).not.toBeInTheDocument();
+
+            // Переход к function children
+            await router.navigate(state2.name, state2.params, state2.meta!.options);
+            expect(await findByTestId('func-content')).toBeInTheDocument();
+            expect(screen.getByTestId('func-content')).toHaveTextContent('Function Content: func-child');
+            expect(queryByTestId('node-content')).not.toBeInTheDocument();
+
+            // Обратно к ReactNode
+            await router.navigate(state1.name, state1.params, state1.meta!.options);
+            expect(await findByTestId('node-content')).toBeInTheDocument();
+            expect(queryByTestId('func-content')).not.toBeInTheDocument();
+        });
+    });
 }); 
