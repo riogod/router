@@ -193,6 +193,15 @@ export interface Router<
     buildPath(route: string, params?: Params): string
     
     /**
+     * Removes a route node and all its children from the router.
+     * This includes cleaning up associated route guards, lifecycle hooks, and other configurations.
+     *
+     * @param name - The full name of the route node to remove (e.g., 'users.profile').
+     * @returns The router instance for chaining.
+     */
+    removeNode(name: string): Router<Dependencies>
+    
+    /**
      * Match a URL path to a route and return the resulting state
      * @param path - URL path to match
      * @param source - Source of the path (for debugging)

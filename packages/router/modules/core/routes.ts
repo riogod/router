@@ -266,6 +266,33 @@ export default function withRoutes<Dependencies>(
             let currentNode = router.rootNode;
             let parentNode = null;
 
+            // Helper function to recursively collect descendant names
+            // Moved to the root of removeNode function body to satisfy no-inner-declarations
+            function collectDescendantNames(node: RouteNode, baseName: string, targetFullName: string, pathSegmentsForTarget: string[]): string[] {
+                const collectedNames: string[] = [];
+                const currentSegmentName = node.name;
+                let correctedFullName = baseName ? `${baseName}.${currentSegmentName}` : currentSegmentName;
+
+                // Correction logic for full name based on whether it's a direct child or deeper descendant
+                // This aims to match the structure used when handlers were initially registered.
+                if (!parentNode || parentNode === router.rootNode) { // Handling direct children of root or the root itself if it's the target
+                    if (pathSegmentsForTarget.length === 1 && currentSegmentName === pathSegmentsForTarget[0]) {
+                        correctedFullName = currentSegmentName; // Top-level node being removed
+                    } else if (pathSegmentsForTarget.length > 1 && currentSegmentName !== pathSegmentsForTarget[pathSegmentsForTarget.length - 1]){
+                         // This is a child of the originally targeted node for removal
+                        correctedFullName = targetFullName + '.' + node.name.split('.').slice(pathSegmentsForTarget.length -1).join('.');
+                    } else if (pathSegmentsForTarget.length > 1 && currentSegmentName === pathSegmentsForTarget[pathSegmentsForTarget.length -1]) {
+                        correctedFullName = targetFullName; // This is the originally targeted node itself
+                    }
+                }
+                
+                collectedNames.push(correctedFullName);
+                node.children.forEach(child => {
+                    collectedNames.push(...collectDescendantNames(child, correctedFullName, targetFullName, pathSegmentsForTarget));
+                });
+                return collectedNames;
+            }
+
             // Find the parent of the node to be removed
             for (let i = 0; i < segments.length - 1; i++) {
                 const segmentName = segments[i];
@@ -274,8 +301,7 @@ export default function withRoutes<Dependencies>(
                     parentNode = foundNode;
                     currentNode = foundNode;
                 } else {
-                    // Parent segment not found, so node to remove doesn't exist or path is invalid
-                    return router;
+                    return router; // Parent segment not found
                 }
             }
 
@@ -283,40 +309,12 @@ export default function withRoutes<Dependencies>(
             const targetNode = (parentNode || router.rootNode).children.find(child => child.name === nodeNameToRemove);
 
             if (targetNode) {
-                // Recursively collect all node names to be removed (target + descendants)
-                const allRemovedNodeNames: string[] = [];
-                function collectDescendantNames(node: RouteNode, baseName: string) {
-                    const fullName = baseName ? `${baseName}.${node.name}` : node.name;
-                    // For rootNode direct children, baseName is empty initially
-                    const actualFullName = (parentNode === null && segments.length === 1) || (parentNode === router.rootNode && segments.length === 1 && segments[0] === node.name) ? node.name : fullName;
-                    
-                    // Correction for root node direct children full name
-                    let correctedFullName = fullName;
-                    if (!parentNode || parentNode === router.rootNode) {
-                         // If segments.length is 1, it means we are removing a direct child of rootNode
-                         // In this case, the fullName passed to _recursiveClearHandlers should be just node.name
-                         // Otherwise, if it is a descendant of a direct child of rootNode, it should be parent.child
-                        const pathSegments = name.split('.');
-                        if(pathSegments.length === 1 && pathSegments[0] === node.name) {
-                            correctedFullName = node.name;
-                        } else if (segments.length > 1 && node.name !== segments[segments.length-1]) {
-                            //This is a child of the target node
-                            correctedFullName = name + '.' + node.name.split('.').slice(segments.length-1).join('.');
-                        } else if (segments.length > 1 && node.name === segments[segments.length-1]){
-                            correctedFullName = name;
-                        }
-                    }
-                    allRemovedNodeNames.push(correctedFullName);
-                    node.children.forEach(child => collectDescendantNames(child, correctedFullName));
-                }
+                const initialBaseName = parentNode ? segments.slice(0, -1).join('.') : '';
+                const allRemovedNodeNames = collectDescendantNames(targetNode, initialBaseName, name, segments);
                 
-                collectDescendantNames(targetNode, parentNode ? segments.slice(0, -1).join('.') : '');
-
-                // Remove the node from its parent
                 const removed = (parentNode || router.rootNode).removeNode(nodeNameToRemove);
 
                 if (removed) {
-                    // Clear all associated handlers and configurations
                     allRemovedNodeNames.forEach(nodeName => {
                         _recursiveClearHandlers(router, nodeName);
                     });
