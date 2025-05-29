@@ -6,45 +6,45 @@ import loggerPlugin from '@riogz/router-plugin-logger';
 const routes: Route[] = [
   {
     name: 'home', 
-    path: '/', 
-    onEnterRoute: async (_state, _fromState) => {
-      console.log('[Route] onEnterRoute callback');
-    }, 
-    onExitRoute: async (_state, _fromState) => {
-      console.log('[Route] onExitRoute callback');
+    path: '/home',
+    onEnterNode: async (_state, _fromState) => {
+      console.log('[Route] onEnterNode callback');
+    },
+    onExitNode: async (_state, _fromState) => {
+      console.log('[Route] onExitNode callback');
     }
   },
   {
     name: 'about', 
-    path: '/about', 
-    onEnterRoute: async (_state, _fromState) => {
-      console.log('[Route] onEnterRoute callback');
+    path: '/about',
+    onEnterNode: async (_state, _fromState) => {
+      console.log('[Route] onEnterNode callback');
     }
   },
   {
     name: 'profile', 
     path: '/profile/:userId', 
-    onEnterRoute: async (_state, _fromState) => {
-      console.log('[Route] onEnterRoute callback');
+    onEnterNode: async (_state, _fromState) => {
+      console.log('[Route] onEnterNode callback');
     }, 
-    onRouteInActiveChain: async (_state, _fromState) => {
-      console.log('[Route] onRouteInActiveChain callback');
+    onNodeInActiveChain: async (_state, _fromState) => {
+      console.log('[Route] onNodeInActiveChain callback');
     }, 
     children: [
       {
         name: 'edit', 
         browserTitle: async (state) => `Редактировать профиль пользователя ${state.params.userId}`, 
         path: '/edit', 
-        onEnterRoute: async (_state, _fromState) => {
-          console.log('[Route] onEnterRoute callback');
+        onEnterNode: async (_state, _fromState) => {
+          console.log('[Route] onEnterNode callback');
         }
       },
       {
         name: 'view', 
         browserTitle: 'Профиль пользователя', 
         path: '/view', 
-        onEnterRoute: async (_state, _fromState) => {
-          console.log('[Route] onEnterRoute callback');
+        onEnterNode: async (_state, _fromState) => {
+          console.log('[Route] onEnterNode callback');
         }
       }
     ]

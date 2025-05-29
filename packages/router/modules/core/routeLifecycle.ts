@@ -52,12 +52,12 @@ export default function withRouteLifecycle<Dependencies>(
     const canActivateFunctions = {}
     
     // New lifecycle hooks storage
-    const onEnterRouteFactories = {}
-    const onExitRouteFactories = {}
-    const onRouteInActiveChainFactories = {}
-    const onEnterRouteFunctions = {}
-    const onExitRouteFunctions = {}
-    const onRouteInActiveChainFunctions = {}
+    const onEnterNodeFactories = {}
+    const onExitNodeFactories = {}
+    const onNodeInActiveChainFactories = {}
+    const onEnterNodeFunctions = {}
+    const onExitNodeFunctions = {}
+    const onNodeInActiveChainFunctions = {}
     const browserTitleFactories = {}
     const browserTitleFunctions = {}
 
@@ -86,9 +86,9 @@ export default function withRouteLifecycle<Dependencies>(
      */
     router.getRouteLifecycleFactories = () => {
         return {
-            onEnterRoute: onEnterRouteFactories,
-            onExitRoute: onExitRouteFactories,
-            onRouteInActiveChain: onRouteInActiveChainFactories
+            onEnterNode: onEnterNodeFactories,
+            onExitNode: onExitNodeFactories,
+            onNodeInActiveChain: onNodeInActiveChainFactories
         }
     }
 
@@ -99,9 +99,9 @@ export default function withRouteLifecycle<Dependencies>(
      */
     router.getRouteLifecycleFunctions = () => {
         return {
-            onEnterRoute: onEnterRouteFunctions,
-            onExitRoute: onExitRouteFunctions,
-            onRouteInActiveChain: onRouteInActiveChainFunctions
+            onEnterNode: onEnterNodeFunctions,
+            onExitNode: onExitNodeFunctions,
+            onNodeInActiveChain: onNodeInActiveChainFunctions
         }
     }
 
@@ -212,9 +212,9 @@ export default function withRouteLifecycle<Dependencies>(
      * })
      * ```
      */
-    router.registerOnEnterRoute = (name, handler) => {
-        onEnterRouteFactories[name] = handler
-        onEnterRouteFunctions[name] = handler
+    router.registerOnEnterNode = (name, handler) => {
+        onEnterNodeFactories[name] = handler
+        onEnterNodeFunctions[name] = handler
         return router
     }
 
@@ -234,9 +234,9 @@ export default function withRouteLifecycle<Dependencies>(
      * })
      * ```
      */
-    router.registerOnExitRoute = (name, handler) => {
-        onExitRouteFactories[name] = handler
-        onExitRouteFunctions[name] = handler
+    router.registerOnExitNode = (name, handler) => {
+        onExitNodeFactories[name] = handler
+        onExitNodeFunctions[name] = handler
         return router
     }
 
@@ -257,9 +257,9 @@ export default function withRouteLifecycle<Dependencies>(
      * })
      * ```
      */
-    router.registerOnRouteInActiveChain = (name, handler) => {
-        onRouteInActiveChainFactories[name] = handler
-        onRouteInActiveChainFunctions[name] = handler
+    router.registerOnNodeInActiveChain = (name, handler) => {
+        onNodeInActiveChainFactories[name] = handler
+        onNodeInActiveChainFunctions[name] = handler
         return router
     }
 

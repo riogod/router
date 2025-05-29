@@ -87,47 +87,47 @@ describe('core/route-lifecycle', function() {
         let router
         let onEnterCalls: Array<{route: string, toState: string, fromState?: string}> = []
         let onExitCalls: Array<{route: string, toState: string, fromState?: string}> = []
-        let onRouteInActiveChainCalls: Array<{route: string, toState: string, fromState?: string}> = []
+        let onNodeInActiveChainCalls: Array<{route: string, toState: string, fromState?: string}> = []
 
         beforeEach(() => {
             onEnterCalls = []
             onExitCalls = []
-            onRouteInActiveChainCalls = []
+            onNodeInActiveChainCalls = []
 
             const routes = [
                 {
                     name: 'root',
                     path: '/root',
-                    onEnterRoute: async (toState, fromState) => {
+                    onEnterNode: async (toState, fromState) => {
                         onEnterCalls.push({ route: 'root', toState: toState.name, fromState: fromState?.name })
                     },
-                    onExitRoute: async (toState, fromState) => {
+                    onExitNode: async (toState, fromState) => {
                         onExitCalls.push({ route: 'root', toState: toState.name, fromState: fromState?.name })
                     },
-                    onRouteInActiveChain: async (toState, fromState) => {
-                        onRouteInActiveChainCalls.push({ route: 'root', toState: toState.name, fromState: fromState?.name })
+                    onNodeInActiveChain: async (toState, fromState) => {
+                        onNodeInActiveChainCalls.push({ route: 'root', toState: toState.name, fromState: fromState?.name })
                     },
                     children: [
                         {
                             name: 'child1',
                             path: '/child1',
-                            onEnterRoute: async (toState, fromState) => {
+                            onEnterNode: async (toState, fromState) => {
                                 onEnterCalls.push({ route: 'root.child1', toState: toState.name, fromState: fromState?.name })
                             },
-                            onExitRoute: async (toState, fromState) => {
+                            onExitNode: async (toState, fromState) => {
                                 onExitCalls.push({ route: 'root.child1', toState: toState.name, fromState: fromState?.name })
                             },
-                            onRouteInActiveChain: async (toState, fromState) => {
-                                onRouteInActiveChainCalls.push({ route: 'root.child1', toState: toState.name, fromState: fromState?.name })
+                            onNodeInActiveChain: async (toState, fromState) => {
+                                onNodeInActiveChainCalls.push({ route: 'root.child1', toState: toState.name, fromState: fromState?.name })
                             },
                             children: [
                                 {
                                     name: 'grandchild',
                                     path: '/grandchild',
-                                    onEnterRoute: async (toState, fromState) => {
+                                    onEnterNode: async (toState, fromState) => {
                                         onEnterCalls.push({ route: 'root.child1.grandchild', toState: toState.name, fromState: fromState?.name })
                                     },
-                                    onExitRoute: async (toState, fromState) => {
+                                    onExitNode: async (toState, fromState) => {
                                         onExitCalls.push({ route: 'root.child1.grandchild', toState: toState.name, fromState: fromState?.name })
                                     }
                                 }
@@ -136,10 +136,10 @@ describe('core/route-lifecycle', function() {
                         {
                             name: 'child2',
                             path: '/child2',
-                            onEnterRoute: async (toState, fromState) => {
+                            onEnterNode: async (toState, fromState) => {
                                 onEnterCalls.push({ route: 'root.child2', toState: toState.name, fromState: fromState?.name })
                             },
-                            onExitRoute: async (toState, fromState) => {
+                            onExitNode: async (toState, fromState) => {
                                 onExitCalls.push({ route: 'root.child2', toState: toState.name, fromState: fromState?.name })
                             }
                         }
@@ -148,10 +148,10 @@ describe('core/route-lifecycle', function() {
                 {
                     name: 'other',
                     path: '/other',
-                    onEnterRoute: async (toState, fromState) => {
+                    onEnterNode: async (toState, fromState) => {
                         onEnterCalls.push({ route: 'other', toState: toState.name, fromState: fromState?.name })
                     },
-                    onExitRoute: async (toState, fromState) => {
+                    onExitNode: async (toState, fromState) => {
                         onExitCalls.push({ route: 'other', toState: toState.name, fromState: fromState?.name })
                     }
                 }
@@ -171,7 +171,7 @@ describe('core/route-lifecycle', function() {
                     { route: 'root', toState: 'root', fromState: undefined }
                 ])
                 expect(onExitCalls).toEqual([])
-                expect(onRouteInActiveChainCalls).toEqual([])
+                expect(onNodeInActiveChainCalls).toEqual([])
                 done()
             })
         })
@@ -195,10 +195,10 @@ describe('core/route-lifecycle', function() {
             router.navigate('root.child1', () => {
                 onEnterCalls = []
                 onExitCalls = []
-                onRouteInActiveChainCalls = []
+                onNodeInActiveChainCalls = []
                 
                 router.navigate('root.child2', () => {
-                    expect(onRouteInActiveChainCalls).toEqual([
+                    expect(onNodeInActiveChainCalls).toEqual([
                         { route: 'root', toState: 'root.child2', fromState: 'root.child1' }
                     ])
                     expect(onExitCalls).toEqual([
@@ -216,10 +216,10 @@ describe('core/route-lifecycle', function() {
             router.navigate('root.child1.grandchild', () => {
                 onEnterCalls = []
                 onExitCalls = []
-                onRouteInActiveChainCalls = []
+                onNodeInActiveChainCalls = []
                 
                 router.navigate('root.child2', () => {
-                    expect(onRouteInActiveChainCalls).toEqual([
+                    expect(onNodeInActiveChainCalls).toEqual([
                         { route: 'root', toState: 'root.child2', fromState: 'root.child1.grandchild' }
                     ])
                     expect(onExitCalls).toContainEqual(
@@ -242,21 +242,21 @@ describe('core/route-lifecycle', function() {
                 {
                     name: 'app',
                     path: '/app',
-                    onRouteInActiveChain: async (toState, fromState) => {
-                        onRouteInActiveChainCalls.push({ route: 'app', toState: toState.name, fromState: fromState?.name })
+                    onNodeInActiveChain: async (toState, fromState) => {
+                        onNodeInActiveChainCalls.push({ route: 'app', toState: toState.name, fromState: fromState?.name })
                     },
                     children: [
                         {
                             name: 'dashboard',
                             path: '/dashboard',
-                            onRouteInActiveChain: async (toState, fromState) => {
-                                onRouteInActiveChainCalls.push({ route: 'app.dashboard', toState: toState.name, fromState: fromState?.name })
+                            onNodeInActiveChain: async (toState, fromState) => {
+                                onNodeInActiveChainCalls.push({ route: 'app.dashboard', toState: toState.name, fromState: fromState?.name })
                             },
                             children: [
                                 {
                                     name: 'stats',
                                     path: '/stats',
-                                    onEnterRoute: async (toState, fromState) => {
+                                    onEnterNode: async (toState, fromState) => {
                                         onEnterCalls.push({ route: 'app.dashboard.stats', toState: toState.name, fromState: fromState?.name })
                                     }
                                 }
@@ -266,7 +266,7 @@ describe('core/route-lifecycle', function() {
                 }
             ])
 
-            onRouteInActiveChainCalls = []
+            onNodeInActiveChainCalls = []
             onEnterCalls = []
 
             newRouter.start()
@@ -274,7 +274,7 @@ describe('core/route-lifecycle', function() {
                 // При начальной навигации к app.dashboard.stats:
                 // - onRouteInActiveChain должен сработать для 'app' и 'app.dashboard' (родительские роуты)
                 // - onEnterRoute должен сработать для 'app.dashboard.stats' (конечный роут)
-                expect(onRouteInActiveChainCalls).toEqual([
+                expect(onNodeInActiveChainCalls).toEqual([
                     { route: 'app', toState: 'app.dashboard.stats', fromState: undefined },
                     { route: 'app.dashboard', toState: 'app.dashboard.stats', fromState: undefined }
                 ])
