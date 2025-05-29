@@ -4,6 +4,17 @@
 
 
 
+
+## [1.0.0](https://github.com/riogod/router/compare/v0.0.16...v1.0.0) (2025-05-29)
+
+### ✨ Features
+
+- **router**: Added removeNode to Core API. It will be remove target node and all children. ([e86fc50](https://github.com/riogod/router/commit/e86fc50a849475c07f1a9619d9e5c7e0182a0eaa))
+
+### 📚 Documentation
+
+- **router**: Refactor documentation ([40fa957](https://github.com/riogod/router/commit/40fa957a5330606982fbe80c506b62625269e9df))
+
 ## [0.0.16](https://github.com/riogod/router/compare/v0.0.15...v0.0.16) (2025-05-29)
 
 ## [0.0.15](https://github.com/riogod/router/compare/v0.0.14...v0.0.15) (2025-05-28)
