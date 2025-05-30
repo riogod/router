@@ -381,7 +381,34 @@ console.log('Added more routes.');
 
 // Navigate to a newly added route
 router.navigate('admin.dashboard');
+
+// Example of updating an existing route and its children
+const existingRouteUpdate: Route = {
+  name: 'admin', // Assuming 'admin' was added before
+  path: '/admin-new-path', // Update path
+  meta: { title: 'New Admin Section' }, // Update meta
+  children: [
+    { name: 'admin.users', path: '/users-new' }, // Update existing child 'admin.users'
+    { name: 'admin.audit', path: '/audit' }     // Add new child 'admin.audit'
+  ]
+};
+router.add(existingRouteUpdate);
+console.log('Updated admin route and its children.');
 ```
+
+**Behavior when adding a route with an existing name:**
+
+- If a route definition provided to `router.add()` has a `name` that already exists in the route tree:
+    - The existing route node with that name will be **updated** with the properties from the new definition (e.g., `path`, `meta`, `canActivate`, `forwardTo`, etc.).
+    - **Children Handling During Update**:
+        - If the new route definition includes `children`, these children will be processed against the existing children of the updated node.
+        - Children from the new definition that have names matching existing children will cause those existing children to be **updated** recursively using the same logic.
+        - Children from the new definition that do not have names matching any existing children will be **added** as new child nodes to the updated parent.
+        - Existing child nodes of the parent that are *not* mentioned by name in the `children` array of the new definition will be **preserved**.
+    - Path conflicts: If updating a node's path results in a conflict with an existing sibling node (a child of the same parent), an error will be thrown.
+- If a route definition uses a dot-separated name (e.g., `'parent.child'`) and the parent segment (e.g., `'parent'`) exists but the child segment does not, the child will be added to the parent.
+- If a route definition uses a dot-separated name and the full name already exists, that specific nested route will be updated.
+- If a parent segment in a dot-separated name does not exist, an error will be thrown.
 
 ### `router.addNode`
 

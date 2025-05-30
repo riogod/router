@@ -318,41 +318,107 @@ export class RouteNode {
     return buildStateFromMatch(match)
   }
 
-  private addRouteNode(route: RouteNode, sort: boolean = true): this {
-    const names = route.name.split('.')
-
-    if (names.length === 1) {
-      // Check duplicated routes
-      if (this.children.map(child => child.name).indexOf(route.name) !== -1) {
-        throw new Error(
-          `Alias "${route.name}" is already defined in route node`
-        )
-      }
-
-      // Check duplicated paths
-      if (this.children.map(child => child.path).indexOf(route.path) !== -1) {
-        throw new Error(`Path "${route.path}" is already defined in route node`)
-      }
-
-      this.children.push(route)
-
-      if (sort) {
-        this.sortChildren()
-      }
-    } else {
-      // Locate parent node
-      const segments = this.getSegmentsByName(names.slice(0, -1).join('.'))
-      if (segments) {
-        route.name = names[names.length - 1]
-        segments[segments.length - 1].add(route)
-      } else {
-        throw new Error(
-          `Could not add route named '${route.name}', parent is missing.`
-        )
-      }
+  private _updateWith(sourceNode: RouteNode, sortChildrenFlag: boolean): void {
+    // 1. Update path (with sibling conflict check)
+    // Update path only if it's different, and check for conflicts
+    if (this.path !== sourceNode.path) {
+        if (this.parent) { // Path conflict check is relevant if there's a parent with other children
+            const conflictingSibling = this.parent.children.find(
+                sibling => sibling !== this && sibling.path === sourceNode.path
+            );
+            if (conflictingSibling) {
+                throw new Error(
+                    `Path "${sourceNode.path}" for route "${this.name}" conflicts with existing sibling route "${conflictingSibling.name}".`
+                );
+            }
+        }
+        this.path = sourceNode.path;
     }
 
-    return this
+    // 2. Update other relevant "parameters" from sourceNode to `this`.
+    // This heavily depends on the actual structure of RouteNode and what properties it stores.
+    // Example: copy properties if they exist in sourceNode and RouteNode supports them.
+    // if (sourceNode.meta !== undefined) {
+    //     this.meta = { ...(this.meta || {}), ...sourceNode.meta };
+    // }
+    // if (sourceNode.redirectToFirstAllowNode !== undefined) {
+    //     this.redirectToFirstAllowNode = sourceNode.redirectToFirstAllowNode;
+    // }
+    // TODO: Add copying/updating of other relevant RouteNode properties here
+    // based on the actual class definition and transferable "parameters".
+
+    // 3. Update/add child nodes.
+    // Child nodes from `sourceNode` are used to update/add to the child nodes of `this`.
+    // Existing child nodes in `this` that are not mentioned by name in `sourceNode.children` will remain.
+    if (sourceNode.children && sourceNode.children.length > 0) {
+        sourceNode.children.forEach(childFromSource => {
+            // Call addRouteNode on `this` (the node being updated) for each child from the source.
+            // `addRouteNode` will handle updating an existing child or adding a new one.
+            const childClone = childFromSource.clone(); // Clone the child from source
+            // Ensure the clone has no parent initially, so it can be correctly parented by `this`
+            // if added as a new node, or its properties used for update if it matches an existing child of `this`.
+            // The clone() method already ensures the new node has no parent.
+            this.addRouteNode(childClone, false); // Defer sorting until the end
+        });
+    }
+
+    if (sortChildrenFlag) {
+        this.sortChildren();
+    }
+  }
+
+  private addRouteNode(route: RouteNode, sort: boolean = true): this {
+    const names = route.name.split('.');
+
+    if (names.length === 1) {
+        // Find an existing child node with the same name
+        const existingChild = this.children.find(child => child.name === route.name);
+
+        if (existingChild) {
+            // === UPDATE EXISTING CHILD NODE ===
+            existingChild._updateWith(route, sort); // Use the helper method to update
+        } else {
+            // === ADD NEW CHILD NODE ===
+            // Check for duplicate path only among other existing child nodes
+            if (this.children.some(child => child.path === route.path)) {
+                throw new Error(
+                    `Path "${route.path}" is already defined in another route node ("${this.children.find(c => c.path === route.path)?.name || 'unknown'}") at this level.`
+                );
+            }
+            route.setParent(this); // Ensure parent is set before adding
+            this.children.push(route);
+            if (sort) {
+                this.sortChildren();
+            }
+        }
+    } else {
+        const parentName = names.slice(0, -1).join('.');
+        const childSimpleName = names[names.length - 1];
+
+        const segments = this.getSegmentsByName(parentName);
+        if (segments && segments.length > 0) {
+            const directParentNode = segments[segments.length - 1];
+
+            // Create a clone from `route` to work with.
+            // The original `route` (argument) will remain untouched.
+            const nodeToProcess = route.clone();
+            nodeToProcess.name = childSimpleName; // Set the simple name for the clone.
+                                                  // Children of this clone already have simple names relative to it (due to how clone works).
+
+            // Now pass this prepared clone to the public `add` method of the parent.
+            // The public `add` will call setParent and then addRouteNode (this same method) on `directParentNode`.
+            // Since `nodeToProcess.name` is now simple, it will fall into the first branch (if names.length === 1).
+            directParentNode.add(nodeToProcess, undefined, sort);
+            
+            // The name of the original `route` (argument) was not changed.
+            // The name of `nodeToProcess` was changed, but it's a local copy.
+        } else {
+            throw new Error(
+                `Could not add route named '${names.join('.')}', parent segment '${parentName}' is missing.`
+            );
+        }
+    }
+    return this;
   }
 
   private checkParents() {

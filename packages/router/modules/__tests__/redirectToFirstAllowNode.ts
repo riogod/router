@@ -1,7 +1,8 @@
-import { errorCodes, constants } from '../'
+import { errorCodes, constants, Route, Router } from '../'
 import { createTestRouter, omitMeta } from './helpers'
 import createRouter from '../createRouter'
 import { findFirstAccessibleChildAtPath } from '../core/routes'
+import {   State, NavigationOptions, DoneFn as RouterDoneFn } from '../types/base'
 
 describe('redirectToFirstAllowNode functionality', function() {
     let router
@@ -821,4 +822,87 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
           done();
         });
       });
+});
+
+
+describe('redirectToFirstAllowNode with route addition for root route', () => {
+    let router: Router<any>; 
+
+    beforeEach(() => {
+        router = createRouter([], {   allowNotFound: false,
+            autoCleanUp: false,
+            defaultRoute: '404', }); 
+
+        router.start();
+
+        const homeConfig: Route[] = [{
+            name: 'home',
+            path: '/',
+            redirectToFirstAllowNode: true,
+            browserTitle: 'Home',
+            children: [
+                {
+                    name: "zzz",
+                    path: '/zzz'
+                }
+            ]
+        }, {
+            name: '404',
+            path: '/404',
+        }];
+        router.add(homeConfig);
+
+        const childrenForHomeConfig: Route[] = [
+            {
+                name: 'home', 
+                path: '/',
+                children: [ 
+                    {
+                        name: 'api', 
+                        path: '/api', 
+                        children: [
+                            { name: 'anotherChild', path: '/anotherChild' }
+                        ]
+                    }
+                ]
+            }
+        ];
+        router.add(childrenForHomeConfig);
+        
+    });
+
+    afterEach(() => {
+        if (router) {
+            router.stop();
+        }
+    });
+
+    it('should redirect from "home" to "api" when "api" is the first child added modularly', (done: RouterDoneFn) => {
+        expect(router.config.redirectToFirstAllowNodeMap).toBeDefined();
+        if (router.config.redirectToFirstAllowNodeMap) {
+            expect(router.config.redirectToFirstAllowNodeMap['home']).toBe(true);
+        }
+        
+        expect(router.buildPath('home.zzz')).toBe(
+            '/zzz'
+        )
+
+        expect(router.buildPath('home.api')).toBe(
+            '/api'
+        )
+
+
+        router.navigate('home', (err, state) => {
+            try {
+                expect(err).toBeNull()
+                expect(state?.name).toBe(`home.zzz`);
+                expect(state?.path).toBe('/zzz');
+                
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    }, 10000);
+
 }); 
