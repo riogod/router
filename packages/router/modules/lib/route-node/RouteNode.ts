@@ -144,12 +144,25 @@ export class RouteNode {
         )
       }
 
-      const routeNode = new RouteNode(route.name, route.path, route.children, {
+      const routeNode = new RouteNode(route.name, route.path, [], {
         finalSort: false,
         onAdd: cb,
         parent: this,
         sort
       })
+
+      for (const key in route) {
+        if (Object.prototype.hasOwnProperty.call(route, key)) {
+          if (!['name', 'path', 'children'].includes(key)) {
+            (routeNode as any)[key] = (route as any)[key]
+          }
+        }
+      }
+      
+      if (route.children && route.children.length > 0) {
+        routeNode.add(route.children, cb, sort)
+      }
+
       const fullName = routeNode
         .getParentSegments([routeNode])
         .map(_ => _.name)
@@ -213,27 +226,35 @@ export class RouteNode {
    * @returns A new RouteNode instance that is a deep copy of this node
    */
   public clone(): RouteNode {
-    // Convert children to route definitions for reconstruction
-    const childRoutes: RouteDefinition[] = this.children.map(child => ({
-      name: child.name,
-      path: child.absolute ? `~${child.path}` : child.path,
-      children: child.children.map(grandchild => ({
-        name: grandchild.name,
-        path: grandchild.absolute ? `~${grandchild.path}` : grandchild.path,
-        // Recursively convert all descendants
-        ...this.convertNodeToDefinition(grandchild)
-      }))
-    }))
-
-    // Create new RouteNode with same properties but no parent
     const clonedNode = new RouteNode(
       this.name,
       this.absolute ? `~${this.path}` : this.path,
-      childRoutes,
-      { finalSort: true }
-    )
+      [], // Children will be added by reconstructing from childRoutes if necessary, or handled by subsequent .add calls
+      { finalSort: false } // Ensure sort is not prematurely done if children are added later
+    );
 
-    return clonedNode
+    // Copy other custom properties from `this` to `clonedNode`
+    for (const key in this) {
+        if (Object.prototype.hasOwnProperty.call(this, key)) {
+            if (!['name', 'path', 'children', 'parent', 'absolute', 'parser'].includes(key)) {
+                (clonedNode as any)[key] = (this as any)[key];
+            }
+        }
+    }
+
+    // After custom props are copied, now add children definitions (if any) to the clone
+    // This ensures that if children themselves have custom props, they are handled by the standard `add` process
+    if (this.children.length > 0) {
+        this.children.forEach(child => {
+            clonedNode.add(child.clone(), undefined, false); // Add a CLONE of the child
+        });
+    }
+    
+    // If the original node had finalSort true in its options, we might want to call sortDescendants
+    // For now, the caller of clone or subsequent operations should handle final sorting if needed.
+    // Example: if clone is used in `addRouteNode`, the `sort` param there will handle it for the parent.
+
+    return clonedNode;
   }
 
   /**
@@ -332,20 +353,23 @@ export class RouteNode {
                 );
             }
         }
-        this.path = sourceNode.path;
+        this.setPath(sourceNode.path);
     }
 
-    // 2. Update other relevant "parameters" from sourceNode to `this`.
-    // This heavily depends on the actual structure of RouteNode and what properties it stores.
-    // Example: copy properties if they exist in sourceNode and RouteNode supports them.
-    // if (sourceNode.meta !== undefined) {
-    //     this.meta = { ...(this.meta || {}), ...sourceNode.meta };
-    // }
-    // if (sourceNode.redirectToFirstAllowNode !== undefined) {
-    //     this.redirectToFirstAllowNode = sourceNode.redirectToFirstAllowNode;
-    // }
-    // TODO: Add copying/updating of other relevant RouteNode properties here
-    // based on the actual class definition and transferable "parameters".
+    // 2. Update other relevant properties from sourceNode to `this`.
+    // We iterate over all keys in sourceNode. Properties like 'name', 'children', 'parent',
+    // 'absolute', and 'parser' are handled by other parts of the logic or are intrinsic
+    // to the node's identity and structure, so we skip them here.
+    // The 'path' is handled above with setPath.
+    for (const key in sourceNode) {
+        if (Object.prototype.hasOwnProperty.call(sourceNode, key)) {
+            if (!['name', 'path', 'children', 'parent', 'absolute', 'parser'].includes(key)) {
+                // Directly assign the value from sourceNode to this node.
+                // This allows custom properties from RouteDefinition to be transferred.
+                (this as any)[key] = (sourceNode as any)[key];
+            }
+        }
+    }
 
     // 3. Update/add child nodes.
     // Child nodes from `sourceNode` are used to update/add to the child nodes of `this`.

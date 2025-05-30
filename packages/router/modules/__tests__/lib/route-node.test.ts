@@ -449,6 +449,99 @@ describe('RouteNode', () => {
       expect(updatedChild?.path).toBe('/to_update_new');
       expect(newChild?.path).toBe('/new');
     });
+
+    it('should update custom properties on an existing node', () => {
+      const initialDef = { 
+        name: 'customRoute', 
+        path: '/custom',
+        customData: 'initial',
+        onEnter: () => 'initialEnter'
+      };
+      root.add(initialDef);
+      let customNode = root.children.find(c => c.name === 'customRoute') as any;
+      expect(customNode?.path).toBe('/custom');
+      expect(customNode?.customData).toBe('initial');
+      expect(customNode?.onEnter()).toBe('initialEnter');
+
+      const updateDef = {
+        name: 'customRoute',
+        path: '/custom_updated', // Path update
+        customData: 'updated',     // Custom data update
+        onEnter: () => 'updatedEnter', // Custom function update
+        anotherProp: true          // Add new custom prop
+      };
+      root.add(updateDef);
+      
+      customNode = root.children.find(c => c.name === 'customRoute') as any;
+      expect(root.children).toHaveLength(1); // Ensure no new node was added
+      expect(customNode?.path).toBe('/custom_updated');
+      expect(customNode?.customData).toBe('updated');
+      expect(customNode?.onEnter()).toBe('updatedEnter');
+      expect(customNode?.anotherProp).toBe(true);
+    });
+
+    it('should transfer custom properties when adding a new node', () => {
+      const nodeDef = { 
+        name: 'newNode', 
+        path: '/new', 
+        customFlag: true,
+        meta: { title: 'New Node'}
+      };
+      root.add(nodeDef);
+
+      const newNode = root.children.find(c => c.name === 'newNode') as any;
+      expect(newNode).toBeDefined();
+      expect(newNode?.customFlag).toBe(true);
+      expect(newNode?.meta?.title).toBe('New Node');
+    });
+
+    it('should handle nested custom objects and arrays correctly during update', () => {
+      root.add({
+        name: 'complexCustom',
+        path: '/complex',
+        config: { settingA: 'valA', numbers: [1, 2] },
+        tags: ['tag1']
+      });
+      let node = root.children.find(c => c.name === 'complexCustom') as any;
+      expect(node.config.settingA).toBe('valA');
+      expect(node.config.numbers).toEqual([1, 2]);
+      expect(node.tags).toEqual(['tag1']);
+
+      root.add({
+        name: 'complexCustom',
+        path: '/complex_new',
+        config: { settingB: 'valB', numbers: [3, 4, 5] }, // Completely replaces config
+        tags: ['tag2', 'tag3'] // Completely replaces tags
+      });
+      node = root.children.find(c => c.name === 'complexCustom') as any;
+      expect(node.path).toBe('/complex_new');
+      expect(node.config.settingA).toBeUndefined();
+      expect(node.config.settingB).toBe('valB');
+      expect(node.config.numbers).toEqual([3, 4, 5]);
+      expect(node.tags).toEqual(['tag2', 'tag3']);
+    });
+
+    it('should preserve existing custom properties if not mentioned in update definition', () => {
+      root.add({
+        name: 'partialUpdate',
+        path: '/partial',
+        permanentData: 'stays here',
+        tempData: 'will change'
+      });
+      let node = root.children.find(c => c.name === 'partialUpdate') as any;
+      expect(node.permanentData).toBe('stays here');
+
+      root.add({
+        name: 'partialUpdate',
+        path: '/partial_updated',
+        tempData: 'changed'
+        // permanentData is not mentioned
+      });
+      node = root.children.find(c => c.name === 'partialUpdate') as any;
+      expect(node.path).toBe('/partial_updated');
+      expect(node.tempData).toBe('changed');
+      expect(node.permanentData).toBe('stays here'); // Should still exist
+    });
   });
 
   describe('Nested Node Addition and Update Functionality', () => {
@@ -550,6 +643,29 @@ describe('RouteNode', () => {
         expect(cNode?.path).toBe('/c');
         expect(dNode?.path).toBe('/d');
         expect(root.getPath('a.b.c')).toBe('/a/b_updated/c');
+    });
+
+    it('should correctly set and update custom properties on nested nodes', () => {
+      root.add({ name: 'app', path: '/app', customTop: 'topLevel'});
+      root.add({ name: 'app.settings', path: '/settings', customNested: 'initialSettings' });
+
+      let settingsNode = root.children.find(c => c.name === 'app')
+                           ?.children.find(c => c.name === 'settings') as any;
+      expect(settingsNode?.customNested).toBe('initialSettings');
+      // Check parent custom prop to ensure it's not affected by child logic
+      expect((root.children.find(c => c.name === 'app') as any)?.customTop).toBe('topLevel'); 
+
+      root.add({
+        name: 'app.settings',
+        path: '/settings_v2',
+        customNested: 'updatedSettings',
+        newCustom: 123
+      });
+      settingsNode = root.children.find(c => c.name === 'app')
+                       ?.children.find(c => c.name === 'settings') as any;
+      expect(settingsNode?.path).toBe('/settings_v2');
+      expect(settingsNode?.customNested).toBe('updatedSettings');
+      expect(settingsNode?.newCustom).toBe(123);
     });
 
     it('should throw error if parent segment for nested add is missing', () => {
