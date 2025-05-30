@@ -5,6 +5,13 @@
 
 
 
+
+## [1.0.1](https://github.com/riogod/router/compare/v1.0.0...v1.0.1) (2025-05-30)
+
+### ✨ Features
+
+- **router**: add node now will be update existed nodes and childrens ([706cf52](https://github.com/riogod/router/commit/706cf52428380024103a4914b713f1c8ffcb9a3a))
+
 ## [1.0.0](https://github.com/riogod/router/compare/v0.0.16...v1.0.0) (2025-05-29)
 
 ### ✨ Features
