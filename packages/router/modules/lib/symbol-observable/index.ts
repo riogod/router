@@ -1,4 +1,3 @@
-/* global window */
 import ponyfill from './ponyfill';
 
 // Типы для глобальных объектов
