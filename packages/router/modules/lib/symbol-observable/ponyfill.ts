@@ -1,4 +1,8 @@
-export default function ponyfill(root: any): symbol | string {
+interface GlobalRoot {
+  Symbol?: SymbolConstructor & { observable?: symbol };
+}
+
+export default function ponyfill(root: GlobalRoot): symbol | string {
   let result: symbol | string;
   const Symbol = root.Symbol;
 

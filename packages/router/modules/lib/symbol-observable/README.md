@@ -1,25 +1,25 @@
 # Symbol Observable
 
-Локальная реализация `Symbol.observable` ponyfill для @riogz/router.
+Local implementation of `Symbol.observable` ponyfill for @riogz/router.
 
-## Описание
+## Description
 
-Эта библиотека предоставляет полифилл для `Symbol.observable`, если `Symbol` существует, но не полифиллит `Symbol`, если он не существует. Предназначена для использования как "ponyfill", что означает, что вы должны использовать экспортированное значение символа из модуля, как описано ниже.
+This library provides a polyfill for `Symbol.observable` if `Symbol` exists, but will not polyfill `Symbol` if it doesn't exist. Meant to be used as a "ponyfill", meaning you're meant to use the module's exported symbol value as described below.
 
-Это сделано для обеспечения того, чтобы все использовали одну и ту же версию символа (или строки в зависимости от окружения), в соответствии с природой символов в JavaScript.
+This is all done to ensure that everyone is using the same version of the symbol (or string depending on the environment), as per the nature of symbols in JavaScript.
 
-## Базовое использование
+## Basic Usage
 
 ```typescript
 import symbolObservable from './lib/symbol-observable';
 
 console.log(symbolObservable);
-//=> Symbol(observable) или '@@observable'
+//=> Symbol(observable) or '@@observable'
 ```
 
-## Создание "observable" объекта
+## Making an object "observable"
 
-Вы можете использовать этот символ для создания объектов, совместимых с RxJS, XStream и Most.js:
+You can use this symbol to create objects compatible with RxJS, XStream and Most.js:
 
 ```typescript
 import symbolObservable from './lib/symbol-observable';
@@ -40,17 +40,17 @@ someObject[symbolObservable] = () => {
 }
 ```
 
-## Структура файлов
+## File Structure
 
-- `index.ts` - Основной экспорт, определяет глобальное окружение и применяет ponyfill
-- `ponyfill.ts` - Основная логика ponyfill
-- `ponyfill.d.ts` - TypeScript типы для ponyfill функции
-- `index.d.ts` - TypeScript типы для основного экспорта
+- `index.ts` - Main export, determines global environment and applies ponyfill
+- `ponyfill.ts` - Core ponyfill logic
+- `ponyfill.d.ts` - TypeScript types for ponyfill function
+- `index.d.ts` - TypeScript types for main export
 
-## Оригинал
+## Original
 
-Основано на [symbol-observable](https://github.com/benlesh/symbol-observable) от Ben Lesh и Sindre Sorhus.
+Based on [symbol-observable](https://github.com/benlesh/symbol-observable) by Ben Lesh and Sindre Sorhus.
 
-## Лицензия
+## License
 
 MIT 

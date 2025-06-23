@@ -1,12 +1,19 @@
 /* global window */
 import ponyfill from './ponyfill';
 
-declare const self: any;
-declare const window: any;
-declare const global: any;
-declare const module: any;
+// Типы для глобальных объектов
+interface GlobalEnvironment {
+  Symbol?: SymbolConstructor & { observable?: symbol };
+  [key: string]: unknown;
+}
 
-let root: any;
+// Определяем типы для глобальных объектов
+declare const self: GlobalEnvironment | undefined;
+declare const window: GlobalEnvironment | undefined;
+declare const global: GlobalEnvironment | undefined;
+declare const module: GlobalEnvironment | undefined;
+
+let root: GlobalEnvironment;
 
 if (typeof self !== 'undefined') {
   root = self;
@@ -17,7 +24,8 @@ if (typeof self !== 'undefined') {
 } else if (typeof module !== 'undefined') {
   root = module;
 } else {
-  root = Function('return this')();
+  // Fallback для получения глобального объекта
+  root = Function('return this')() as GlobalEnvironment;
 }
 
 const result = ponyfill(root);
