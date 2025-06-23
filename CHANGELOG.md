@@ -6,6 +6,13 @@
 
 
 
+
+## [1.0.2](https://github.com/riogod/router/compare/v1.0.1...v1.0.2) (2025-06-23)
+
+### ✨ Features
+
+- implement local symbol-observable to remove external dependency. Now @riogz/router is a zero-deps library. ([e048fbb](https://github.com/riogod/router/commit/e048fbb4da0e43c86db7a6adace8572c41537b11))
+
 ## [1.0.1](https://github.com/riogod/router/compare/v1.0.0...v1.0.1) (2025-05-30)
 
 ### ✨ Features
