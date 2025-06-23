@@ -26,7 +26,7 @@ module.exports = {
         // При маппинге зависимостей из node_modules, важно мапить на их commonjs выход, если они не ESM
         // или если ts-jest не настроен их транспилировать.
         // '^route-node$': '<rootDir>/node_modules/route-node/commonjs/route-node.js', // route-node используется внутри router5
-        // '^symbol-observable$': '<rootDir>/node_modules/symbol-observable/lib/index.js' // symbol-observable используется внутри router5
+        // symbol-observable теперь реализован локально в packages/router/modules/lib/symbol-observable
         // Оставим пока маппинг только для пакетов из этого монорепозитория
     },
     transformIgnorePatterns: [
