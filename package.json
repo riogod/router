@@ -95,5 +95,11 @@
       "examples/*"
     ]
   },
+  "resolutions": {
+    "examples/react-router-demo/react": "^19.1.0",
+    "examples/react-router-demo/react-dom": "^19.1.0",
+    "examples/react-router-demo/@types/react": "^19.1.4",
+    "examples/react-router-demo/@types/react-dom": "^19.1.5"
+  },
   "version": "0.0.3"
 }
