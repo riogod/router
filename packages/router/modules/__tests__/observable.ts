@@ -1,5 +1,5 @@
 import { createTestRouter } from './helpers'
-import $$observable from 'symbol-observable';
+import $$observable from '../lib/symbol-observable';
 
 
 describe('core/observable', function() {

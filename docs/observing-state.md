@@ -123,7 +123,7 @@ const removeStopListener = router.addEventListener(constants.ROUTER_STOP, () => 
 
 ```typescript
 import { from } from 'rxjs'; // Example with RxJS
-import $$observable from 'symbol-observable'; // Or router[Symbol.observable]
+// $$observable is available as router[Symbol.observable]
 
 const routerObservable = from(router); // router itself is an Observable
 

@@ -33,8 +33,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@riogz/router-transition-path": "^1.0.1",
-    "symbol-observable": "4.0.0"
+    "@riogz/router-transition-path": "^1.0.1"
   },
   "scripts": {
     "test": "jest"

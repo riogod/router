@@ -1,4 +1,4 @@
-import $$observable from 'symbol-observable'
+import $$observable from '../lib/symbol-observable'
 import { Router } from '../types/router'
 import { constants } from '../constants'
 
