@@ -7,6 +7,9 @@
 
 
 
+
+## [v1.0.3](https://github.com/riogod/router/compare/v1.0.2...vv1.0.3) (2025-09-30)
+
 ## [1.0.2](https://github.com/riogod/router/compare/v1.0.1...v1.0.2) (2025-06-23)
 
 ### ✨ Features
