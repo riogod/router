@@ -256,7 +256,12 @@ export default function transition(
                 finalToDeactivate.forEach((name) => {
                     const hook = onExitNodeFunctions[name]
                     if (hook) {
-                        hook(toState, fromState)
+                        // Wrap in Promise.resolve to handle potential rejections
+                        Promise.resolve(hook(toState, fromState))
+                            .catch(() => {
+                                // Silently ignore errors in lifecycle hooks
+                                // They should not block navigation
+                            })
                     }
                 })
                 // Call callback immediately - don't wait for hooks to complete
@@ -271,7 +276,12 @@ export default function transition(
                 finalToActivate.forEach((name) => {
                     const hook = onEnterNodeFunctions[name]
                     if (hook) {
-                        hook(toState, fromState)
+                        // Wrap in Promise.resolve to handle potential rejections
+                        Promise.resolve(hook(toState, fromState))
+                            .catch(() => {
+                                // Silently ignore errors in lifecycle hooks
+                                // They should not block navigation
+                            })
                     }
                 })
                 // Call callback immediately - don't wait for hooks to complete
@@ -286,7 +296,12 @@ export default function transition(
                 onPath.forEach((name) => {
                     const hook = onNodeInActiveChainFunctions[name]
                     if (hook) {
-                        hook(toState, fromState)
+                        // Wrap in Promise.resolve to handle potential rejections
+                        Promise.resolve(hook(toState, fromState))
+                            .catch(() => {
+                                // Silently ignore errors in lifecycle hooks
+                                // They should not block navigation
+                            })
                     }
                 })
                 // Call callback immediately - don't wait for hooks to complete

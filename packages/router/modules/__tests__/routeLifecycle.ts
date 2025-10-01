@@ -532,6 +532,141 @@ describe('core/route-lifecycle', function () {
                 })
             })
         })
+
+        it('should handle Promise rejections in lifecycle hooks without causing unhandled rejections', done => {
+            // Track unhandled rejections
+            const unhandledRejections: any[] = []
+            const rejectionHandler = (reason: any) => {
+                unhandledRejections.push(reason)
+            }
+
+            process.on('unhandledRejection', rejectionHandler)
+
+            let navigationCompleted = false
+            let hookWasExecuted = false
+
+            const testRoutes = [
+                {
+                    name: 'source',
+                    path: '/source'
+                },
+                {
+                    name: 'target',
+                    path: '/target',
+                    onEnterNode: async (toState, fromState, deps) => {
+                        hookWasExecuted = true
+                        // Simulate async operation then throw error
+                        await new Promise(resolve => setTimeout(resolve, 50))
+                        throw new Error('Intentional test error in lifecycle hook')
+                    }
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            testRouter.navigate('source', () => {
+                // Navigate to target which will trigger the hook that throws
+                testRouter.navigate('target', (err, state) => {
+                    navigationCompleted = true
+
+                    // Navigation should succeed despite hook error
+                    expect(err).toBeNull()
+                    expect(state?.name).toBe('target')
+
+                    // Wait for hook to execute and potentially throw
+                    setTimeout(() => {
+                        // Hook should have been executed
+                        expect(hookWasExecuted).toBe(true)
+
+                        // No unhandled rejections should occur
+                        expect(unhandledRejections).toHaveLength(0)
+
+                        // Cleanup
+                        process.removeListener('unhandledRejection', rejectionHandler)
+                        testRouter.stop()
+                        done()
+                    }, 150)
+                })
+            })
+        })
+
+        it('should handle Promise rejections in all lifecycle hook types', done => {
+            const unhandledRejections: any[] = []
+            const rejectionHandler = (reason: any) => {
+                unhandledRejections.push(reason)
+            }
+
+            process.on('unhandledRejection', rejectionHandler)
+
+            const hooksExecuted = {
+                onEnterNode: false,
+                onExitNode: false,
+                onNodeInActiveChain: false
+            }
+
+            const testRoutes = [
+                {
+                    name: 'parent',
+                    path: '/parent',
+                    onNodeInActiveChain: async (toState, fromState, deps) => {
+                        hooksExecuted.onNodeInActiveChain = true
+                        await new Promise(resolve => setTimeout(resolve, 30))
+                        throw new Error('Error in onNodeInActiveChain')
+                    },
+                    children: [
+                        {
+                            name: 'child',
+                            path: '/child',
+                            onEnterNode: async (toState, fromState, deps) => {
+                                hooksExecuted.onEnterNode = true
+                                await new Promise(resolve => setTimeout(resolve, 30))
+                                throw new Error('Error in onEnterNode')
+                            },
+                            onExitNode: async (toState, fromState, deps) => {
+                                hooksExecuted.onExitNode = true
+                                await new Promise(resolve => setTimeout(resolve, 30))
+                                throw new Error('Error in onExitNode')
+                            }
+                        }
+                    ]
+                },
+                {
+                    name: 'other',
+                    path: '/other'
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            testRouter.navigate('parent.child', () => {
+                // Navigate to another route to trigger onExitNode
+                testRouter.navigate('other', () => {
+                    // Wait for all hooks to execute
+                    setTimeout(() => {
+                        // All hooks should have been executed
+                        expect(hooksExecuted.onEnterNode).toBe(true)
+                        expect(hooksExecuted.onExitNode).toBe(true)
+                        expect(hooksExecuted.onNodeInActiveChain).toBe(true)
+
+                        // No unhandled rejections despite errors in all hooks
+                        expect(unhandledRejections).toHaveLength(0)
+
+                        // Cleanup
+                        process.removeListener('unhandledRejection', rejectionHandler)
+                        testRouter.stop()
+                        done()
+                    }, 150)
+                })
+            })
+        })
     })
 
     describe('Browser title functionality', () => {
