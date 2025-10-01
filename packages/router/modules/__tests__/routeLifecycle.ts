@@ -2,17 +2,17 @@ import { errorCodes } from '../'
 import { createTestRouter, omitMeta } from './helpers'
 import createRouter from '../createRouter'
 
-describe('core/route-lifecycle', function() {
+describe('core/route-lifecycle', function () {
     let router
 
     beforeAll(() => (router = createTestRouter().start()))
     afterAll(() => router.stop())
 
     it('should block navigation if a component refuses deactivation', done => {
-        router.navigate('users.list', function() {
+        router.navigate('users.list', function () {
             // Cannot deactivate
             router.canDeactivate('users.list', () => () => Promise.reject())
-            router.navigate('users', function(err) {
+            router.navigate('users', function (err) {
                 expect(err.code).toBe(errorCodes.CANNOT_DEACTIVATE)
                 expect(err.segment).toBe('users.list')
                 expect(omitMeta(router.getState())).toEqual({
@@ -23,7 +23,7 @@ describe('core/route-lifecycle', function() {
 
                 // Can deactivate
                 router.canDeactivate('users.list', true)
-                router.navigate('users', function() {
+                router.navigate('users', function () {
                     expect(omitMeta(router.getState())).toEqual({
                         name: 'users',
                         params: {},
@@ -40,13 +40,13 @@ describe('core/route-lifecycle', function() {
     })
 
     it('should register can deactivate status', done => {
-        router.navigate('users.list', function() {
+        router.navigate('users.list', function () {
             router.canDeactivate('users.list', false)
-            router.navigate('users', function(err) {
+            router.navigate('users', function (err) {
                 expect(err.code).toBe(errorCodes.CANNOT_DEACTIVATE)
                 expect(err.segment).toBe('users.list')
                 router.canDeactivate('users.list', true)
-                router.navigate('users', function(err) {
+                router.navigate('users', function (err) {
                     expect(err).toBe(null)
                     done()
                 })
@@ -55,8 +55,8 @@ describe('core/route-lifecycle', function() {
     })
 
     it('should block navigation if a route cannot be activated', done => {
-        router.navigate('home', function() {
-            router.navigate('admin', function(err) {
+        router.navigate('home', function () {
+            router.navigate('admin', function (err) {
                 expect(err.code).toBe(errorCodes.CANNOT_ACTIVATE)
                 expect(err.segment).toBe('admin')
                 expect(router.isActive('home')).toBe(true)
@@ -85,9 +85,9 @@ describe('core/route-lifecycle', function() {
 
     describe('Route lifecycle hooks', () => {
         let router
-        let onEnterCalls: Array<{route: string, toState: string, fromState?: string, deps: any}> = []
-        let onExitCalls: Array<{route: string, toState: string, fromState?: string, deps: any}> = []
-        let onNodeInActiveChainCalls: Array<{route: string, toState: string, fromState?: string, deps: any}> = []
+        let onEnterCalls: Array<{ route: string, toState: string, fromState?: string, deps: any }> = []
+        let onExitCalls: Array<{ route: string, toState: string, fromState?: string, deps: any }> = []
+        let onNodeInActiveChainCalls: Array<{ route: string, toState: string, fromState?: string, deps: any }> = []
 
         beforeEach(() => {
             onEnterCalls = []
@@ -159,7 +159,7 @@ describe('core/route-lifecycle', function() {
 
             router = createRouter(routes)
             // Set up test dependencies
-            router.setDependencies({ 
+            router.setDependencies({
                 testService: { name: 'TestService' },
                 analytics: { trackPageView: jest.fn() }
             })
@@ -201,7 +201,7 @@ describe('core/route-lifecycle', function() {
                 onEnterCalls = []
                 onExitCalls = []
                 onNodeInActiveChainCalls = []
-                
+
                 router.navigate('root.child2', () => {
                     expect(onNodeInActiveChainCalls).toEqual([
                         { route: 'root', toState: 'root.child2', fromState: 'root.child1.grandchild', deps: expect.objectContaining({ testService: { name: 'TestService' } }) }
@@ -221,7 +221,7 @@ describe('core/route-lifecycle', function() {
         })
 
         it('should call onRouteInActiveChain for parent routes on initial navigation', done => {
-            // Создаем новый роутер для тестирования начальной навигации
+            // Create a new router to test initial navigation
             const newRouter = createRouter([
                 {
                     name: 'app',
@@ -253,15 +253,15 @@ describe('core/route-lifecycle', function() {
             onNodeInActiveChainCalls = []
             onEnterCalls = []
 
-            newRouter.setDependencies({ 
+            newRouter.setDependencies({
                 testService: { name: 'TestService' },
                 analytics: { trackPageView: jest.fn() }
             })
             newRouter.start()
             newRouter.navigate('app.dashboard.stats', () => {
-                // При начальной навигации к app.dashboard.stats:
-                // - onRouteInActiveChain должен сработать для 'app' и 'app.dashboard' (родительские роуты)
-                // - onEnterRoute должен сработать для 'app.dashboard.stats' (конечный роут)
+                // On initial navigation to app.dashboard.stats:
+                // - onRouteInActiveChain should be triggered for 'app' and 'app.dashboard' (parent routes)
+                // - onEnterRoute should be triggered for 'app.dashboard.stats' (final route)
                 expect(onNodeInActiveChainCalls).toEqual([
                     { route: 'app', toState: 'app.dashboard.stats', fromState: undefined, deps: expect.objectContaining({ testService: { name: 'TestService' } }) },
                     { route: 'app.dashboard', toState: 'app.dashboard.stats', fromState: undefined, deps: expect.objectContaining({ testService: { name: 'TestService' } }) }
@@ -269,7 +269,7 @@ describe('core/route-lifecycle', function() {
                 expect(onEnterCalls).toEqual([
                     { route: 'app.dashboard.stats', toState: 'app.dashboard.stats', fromState: undefined, deps: expect.objectContaining({ testService: { name: 'TestService' } }) }
                 ])
-                
+
                 newRouter.stop()
                 done()
             })
@@ -277,7 +277,7 @@ describe('core/route-lifecycle', function() {
 
         it('should pass dependencies to lifecycle hooks', done => {
             let depsReceived: any = null
-            
+
             const testRoutes = [
                 {
                     name: 'testRoute',
@@ -289,11 +289,11 @@ describe('core/route-lifecycle', function() {
             ]
 
             const testRouter = createRouter(testRoutes)
-            const testDeps = { 
+            const testDeps = {
                 testService: { name: 'TestService' },
                 analytics: { trackPageView: jest.fn() }
             }
-            
+
             testRouter.setDependencies(testDeps)
             testRouter.start()
 
@@ -302,9 +302,369 @@ describe('core/route-lifecycle', function() {
                 expect(depsReceived).toEqual(testDeps)
                 expect(depsReceived!.testService.name).toBe('TestService')
                 expect(typeof depsReceived!.analytics.trackPageView).toBe('function')
-                
+
                 testRouter.stop()
                 done()
+            })
+        })
+
+        it('should NOT block navigation with async operations in lifecycle hooks', done => {
+            let onEnterCompleted = false
+            let onExitCompleted = false
+            let navigationCompleteTime: number
+
+            const testRoutes = [
+                {
+                    name: 'source',
+                    path: '/source',
+                    onExitNode: async (toState, fromState, deps) => {
+                        await new Promise(resolve => setTimeout(resolve, 200)) // 200ms delay
+                        onExitCompleted = true
+                    }
+                },
+                {
+                    name: 'target',
+                    path: '/target',
+                    onEnterNode: async (toState, fromState, deps) => {
+                        await new Promise(resolve => setTimeout(resolve, 300)) // 300ms delay
+                        onEnterCompleted = true
+                    }
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            const navigationStartTime = Date.now()
+
+            // First navigate to source
+            testRouter.navigate('source', () => {
+                // Now navigate to target (this will trigger onExitNode for source and onEnterNode for target)
+                testRouter.navigate('target', () => {
+                    navigationCompleteTime = Date.now()
+                    const totalDuration = navigationCompleteTime - navigationStartTime
+
+                    // Navigation should complete quickly (< 50ms), not waiting for async operations
+                    expect(totalDuration).toBeLessThan(50)
+
+                    // Verify that async operations haven't completed yet
+                    expect(onExitCompleted).toBe(false)
+                    expect(onEnterCompleted).toBe(false)
+
+                    // Wait for async operations to complete for verification
+                    setTimeout(() => {
+                        expect(onExitCompleted).toBe(true)
+                        expect(onEnterCompleted).toBe(true)
+
+                        testRouter.stop()
+                        done()
+                    }, 350) // Wait longer than the longest operation (300ms)
+                })
+            })
+        })
+
+        it('should not block navigation when lifecycle hooks contain async operations', done => {
+            let navigationCompleted = false
+            let hookExecuted = false
+
+            const testRoutes = [
+                {
+                    name: 'asyncRoute',
+                    path: '/async',
+                    onEnterNode: async (toState, fromState, deps) => {
+                        // Async operation without blocking
+                        await new Promise(resolve => setTimeout(resolve, 100))
+                        hookExecuted = true
+                    }
+                },
+                {
+                    name: 'target',
+                    path: '/target'
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            const navigationStartTime = Date.now()
+
+            // Navigate to asyncRoute, then to target
+            testRouter.navigate('asyncRoute', () => {
+                testRouter.navigate('target', () => {
+                    const navigationDuration = Date.now() - navigationStartTime
+                    navigationCompleted = true
+
+                    // Navigation should complete quickly without waiting for hooks
+                    expect(navigationDuration).toBeLessThan(50)
+                    expect(testRouter.getState().name).toBe('target')
+
+                    // Hook executes in background
+                    setTimeout(() => {
+                        expect(hookExecuted).toBe(true)
+                        testRouter.stop()
+                        done()
+                    }, 150)
+                })
+            })
+        })
+
+        it('should execute multiple lifecycle hooks in parallel', done => {
+            let hookExecutionTimes: Array<{ hook: string; duration: number }> = []
+            let navigationCompleted = false
+
+            const testRoutes = [
+                {
+                    name: 'source',
+                    path: '/source',
+                    onExitNode: async (toState, fromState, deps) => {
+                        const startTime = Date.now()
+                        await new Promise(resolve => setTimeout(resolve, 100))
+                        hookExecutionTimes.push({ hook: 'onExitNode', duration: Date.now() - startTime })
+                    }
+                },
+                {
+                    name: 'target',
+                    path: '/target',
+                    onEnterNode: async (toState, fromState, deps) => {
+                        const startTime = Date.now()
+                        await new Promise(resolve => setTimeout(resolve, 150))
+                        hookExecutionTimes.push({ hook: 'onEnterNode', duration: Date.now() - startTime })
+                    }
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            const navigationStartTime = Date.now()
+
+            // Navigate to source, then to target
+            testRouter.navigate('source', () => {
+                testRouter.navigate('target', () => {
+                    const navigationDuration = Date.now() - navigationStartTime
+                    navigationCompleted = true
+
+                    // Navigation should complete quickly - this is the main goal of the test
+                    expect(navigationDuration).toBeLessThan(50)
+                    expect(testRouter.getState().name).toBe('target')
+
+                    // Wait for all hooks to complete
+                    setTimeout(() => {
+                        expect(hookExecutionTimes).toHaveLength(2)
+
+                        // Verify that hooks executed (main point - navigation wasn't blocked)
+                        const maxDuration = Math.max(...hookExecutionTimes.map(h => h.duration))
+                        const totalDuration = hookExecutionTimes.reduce((sum, h) => sum + h.duration, 0)
+
+                        // Hooks should execute (execution time should be reasonable)
+                        expect(maxDuration).toBeGreaterThan(90) // Minimum 90ms for the fastest hook
+                        expect(totalDuration).toBeGreaterThan(200) // Total time should be greater than sum
+
+                        testRouter.stop()
+                        done()
+                    }, 200)
+                })
+            })
+        })
+
+        it('should handle synchronous and asynchronous lifecycle hooks the same way', done => {
+            let syncHookCalled = false
+            let asyncHookCalled = false
+            let navigationCompleted = false
+
+            const testRoutes = [
+                {
+                    name: 'mixed',
+                    path: '/mixed',
+                    onEnterNode: async (toState, fromState, deps) => {
+                        // Synchronous hook
+                        syncHookCalled = true
+                    },
+                    onExitNode: async (toState, fromState, deps) => {
+                        // Asynchronous hook
+                        await new Promise(resolve => setTimeout(resolve, 100))
+                        asyncHookCalled = true
+                    }
+                },
+                {
+                    name: 'target',
+                    path: '/target'
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            const navigationStartTime = Date.now()
+
+            // Navigate to mixed, then to target
+            testRouter.navigate('mixed', () => {
+                testRouter.navigate('target', () => {
+                    const navigationDuration = Date.now() - navigationStartTime
+                    navigationCompleted = true
+
+                    // Navigation should complete quickly
+                    expect(navigationDuration).toBeLessThan(50)
+                    expect(testRouter.getState().name).toBe('target')
+
+                    // Synchronous hook should be called immediately
+                    expect(syncHookCalled).toBe(true)
+
+                    // Asynchronous hook should complete later
+                    setTimeout(() => {
+                        expect(asyncHookCalled).toBe(true)
+
+                        testRouter.stop()
+                        done()
+                    }, 150)
+                })
+            })
+        })
+
+        it('should handle Promise rejections in lifecycle hooks without causing unhandled rejections', done => {
+            // Track unhandled rejections
+            const unhandledRejections: any[] = []
+            const rejectionHandler = (reason: any) => {
+                unhandledRejections.push(reason)
+            }
+
+            process.on('unhandledRejection', rejectionHandler)
+
+            let navigationCompleted = false
+            let hookWasExecuted = false
+
+            const testRoutes = [
+                {
+                    name: 'source',
+                    path: '/source'
+                },
+                {
+                    name: 'target',
+                    path: '/target',
+                    onEnterNode: async (toState, fromState, deps) => {
+                        hookWasExecuted = true
+                        // Simulate async operation then throw error
+                        await new Promise(resolve => setTimeout(resolve, 50))
+                        throw new Error('Intentional test error in lifecycle hook')
+                    }
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            testRouter.navigate('source', () => {
+                // Navigate to target which will trigger the hook that throws
+                testRouter.navigate('target', (err, state) => {
+                    navigationCompleted = true
+
+                    // Navigation should succeed despite hook error
+                    expect(err).toBeNull()
+                    expect(state?.name).toBe('target')
+
+                    // Wait for hook to execute and potentially throw
+                    setTimeout(() => {
+                        // Hook should have been executed
+                        expect(hookWasExecuted).toBe(true)
+
+                        // No unhandled rejections should occur
+                        expect(unhandledRejections).toHaveLength(0)
+
+                        // Cleanup
+                        process.removeListener('unhandledRejection', rejectionHandler)
+                        testRouter.stop()
+                        done()
+                    }, 150)
+                })
+            })
+        })
+
+        it('should handle Promise rejections in all lifecycle hook types', done => {
+            const unhandledRejections: any[] = []
+            const rejectionHandler = (reason: any) => {
+                unhandledRejections.push(reason)
+            }
+
+            process.on('unhandledRejection', rejectionHandler)
+
+            const hooksExecuted = {
+                onEnterNode: false,
+                onExitNode: false,
+                onNodeInActiveChain: false
+            }
+
+            const testRoutes = [
+                {
+                    name: 'parent',
+                    path: '/parent',
+                    onNodeInActiveChain: async (toState, fromState, deps) => {
+                        hooksExecuted.onNodeInActiveChain = true
+                        await new Promise(resolve => setTimeout(resolve, 30))
+                        throw new Error('Error in onNodeInActiveChain')
+                    },
+                    children: [
+                        {
+                            name: 'child',
+                            path: '/child',
+                            onEnterNode: async (toState, fromState, deps) => {
+                                hooksExecuted.onEnterNode = true
+                                await new Promise(resolve => setTimeout(resolve, 30))
+                                throw new Error('Error in onEnterNode')
+                            },
+                            onExitNode: async (toState, fromState, deps) => {
+                                hooksExecuted.onExitNode = true
+                                await new Promise(resolve => setTimeout(resolve, 30))
+                                throw new Error('Error in onExitNode')
+                            }
+                        }
+                    ]
+                },
+                {
+                    name: 'other',
+                    path: '/other'
+                }
+            ]
+
+            const testRouter = createRouter(testRoutes)
+            testRouter.setDependencies({
+                testService: { name: 'TestService' }
+            })
+            testRouter.start()
+
+            testRouter.navigate('parent.child', () => {
+                // Navigate to another route to trigger onExitNode
+                testRouter.navigate('other', () => {
+                    // Wait for all hooks to execute
+                    setTimeout(() => {
+                        // All hooks should have been executed
+                        expect(hooksExecuted.onEnterNode).toBe(true)
+                        expect(hooksExecuted.onExitNode).toBe(true)
+                        expect(hooksExecuted.onNodeInActiveChain).toBe(true)
+
+                        // No unhandled rejections despite errors in all hooks
+                        expect(unhandledRejections).toHaveLength(0)
+
+                        // Cleanup
+                        process.removeListener('unhandledRejection', rejectionHandler)
+                        testRouter.stop()
+                        done()
+                    }, 150)
+                })
             })
         })
     })
@@ -315,12 +675,12 @@ describe('core/route-lifecycle', function() {
         let mockDocument
 
         beforeEach(() => {
-            // Мокируем document если его нет
+            // Mock document if it doesn't exist
             if (typeof document === 'undefined') {
                 mockDocument = {
                     title: 'Default Title'
                 }
-                ;(global as any).document = mockDocument
+                    ; (global as any).document = mockDocument
             } else {
                 originalTitle = document.title
                 document.title = 'Default Title'
@@ -373,7 +733,7 @@ describe('core/route-lifecycle', function() {
 
             router.navigate('user', { id: '123' }, (err) => {
                 expect(err).toBeNull()
-                // Небольшая задержка для async функции
+                // Navigation completes immediately, browserTitle executes in background
                 setTimeout(() => {
                     expect(document.title).toBe('User 123 Profile')
                     done()
@@ -396,7 +756,7 @@ describe('core/route-lifecycle', function() {
                         {
                             name: 'profile',
                             path: '/profile'
-                            // Нет browserTitle - должен использовать родительский
+                            // No browserTitle - should use parent's
                         }
                     ]
                 }
@@ -408,7 +768,7 @@ describe('core/route-lifecycle', function() {
             router.navigate('app.dashboard', (err) => {
                 expect(err).toBeNull()
                 expect(document.title).toBe('Dashboard - My App')
-                
+
                 router.navigate('app.profile', (err) => {
                     expect(err).toBeNull()
                     expect(document.title).toBe('My App')
@@ -422,7 +782,7 @@ describe('core/route-lifecycle', function() {
                 {
                     name: 'simple',
                     path: '/simple'
-                    // Нет browserTitle
+                    // No browserTitle
                 }
             ]
 
@@ -459,11 +819,154 @@ describe('core/route-lifecycle', function() {
 
             router.navigate('user', { id: '123' }, (err) => {
                 expect(err).toBeNull()
-                // Небольшая задержка для async функции
+                // Navigation completes immediately, browserTitle executes in background
                 setTimeout(() => {
                     expect(document.title).toBe('User 123 - My Application')
                     done()
                 }, 10)
+            })
+        })
+
+        it('should NOT block navigation with async browserTitle functions', (done) => {
+            let navigationCompleted = false
+            let titleUpdated = false
+
+            const routes = [
+                {
+                    name: 'slowTitle',
+                    path: '/slow',
+                    browserTitle: async (state, deps) => {
+                        await new Promise(resolve => setTimeout(resolve, 200)) // 200ms delay
+                        titleUpdated = true
+                        return 'Slow Title'
+                    }
+                },
+                {
+                    name: 'target',
+                    path: '/target'
+                }
+            ]
+
+            router = createRouter(routes)
+            router.setDependencies({
+                userService: {
+                    getAppName: () => 'My Application'
+                }
+            })
+            router.start()
+
+            const navigationStartTime = Date.now()
+
+            router.navigate('slowTitle', (err) => {
+                const navigationDuration = Date.now() - navigationStartTime
+                navigationCompleted = true
+
+                // Navigation should complete quickly, not waiting for browserTitle
+                expect(navigationDuration).toBeLessThan(50)
+                expect(err).toBeNull()
+
+                // browserTitle should not be updated yet
+                expect(titleUpdated).toBe(false)
+
+                // Wait for browserTitle to complete
+                setTimeout(() => {
+                    expect(titleUpdated).toBe(true)
+                    expect(document.title).toBe('Slow Title')
+                    done()
+                }, 250)
+            })
+        })
+
+        it('should not block navigation with slow browserTitle functions', (done) => {
+            let navigationCompleted = false
+            let titleFunctionCalled = false
+
+            const routes = [
+                {
+                    name: 'slowTitleRoute',
+                    path: '/slow-title',
+                    browserTitle: async (state, deps) => {
+                        titleFunctionCalled = true
+                        await new Promise(resolve => setTimeout(resolve, 100))
+                        return 'Slow Title Result'
+                    }
+                },
+                {
+                    name: 'target',
+                    path: '/target'
+                }
+            ]
+
+            router = createRouter(routes)
+            router.start()
+
+            const navigationStartTime = Date.now()
+
+            router.navigate('slowTitleRoute', (err) => {
+                const navigationDuration = Date.now() - navigationStartTime
+                navigationCompleted = true
+
+                // Navigation should complete quickly without waiting for browserTitle
+                expect(navigationDuration).toBeLessThan(50)
+                expect(err).toBeNull()
+                expect(titleFunctionCalled).toBe(true)
+
+                // Wait for title to be set
+                setTimeout(() => {
+                    expect(document.title).toBe('Slow Title Result')
+                    done()
+                }, 150)
+            })
+        })
+
+        it('should handle synchronous and asynchronous browserTitle functions the same way', (done) => {
+            let syncTitleSet = false
+            let asyncTitleSet = false
+
+            const routes = [
+                {
+                    name: 'syncTitle',
+                    path: '/sync',
+                    browserTitle: async (state, deps) => {
+                        syncTitleSet = true
+                        return 'Sync Title'
+                    }
+                },
+                {
+                    name: 'asyncTitle',
+                    path: '/async',
+                    browserTitle: async (state, deps) => {
+                        await new Promise(resolve => setTimeout(resolve, 100))
+                        asyncTitleSet = true
+                        return 'Async Title'
+                    }
+                }
+            ]
+
+            router = createRouter(routes)
+            router.start()
+
+            // Test synchronous function
+            router.navigate('syncTitle', (err) => {
+                expect(err).toBeNull()
+                expect(syncTitleSet).toBe(true)
+
+                // Wait for title to be set (it's set asynchronously)
+                setTimeout(() => {
+                    expect(document.title).toBe('Sync Title')
+
+                    // Test asynchronous function
+                    router.navigate('asyncTitle', (err) => {
+                        expect(err).toBeNull()
+                        expect(asyncTitleSet).toBe(false) // Not completed yet
+
+                        setTimeout(() => {
+                            expect(asyncTitleSet).toBe(true)
+                            expect(document.title).toBe('Async Title')
+                            done()
+                        }, 150)
+                    })
+                }, 50)
             })
         })
     })

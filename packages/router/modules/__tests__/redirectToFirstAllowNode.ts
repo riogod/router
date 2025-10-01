@@ -2,9 +2,19 @@ import { errorCodes, constants, Route, Router } from '../'
 import { createTestRouter, omitMeta } from './helpers'
 import createRouter from '../createRouter'
 import { findFirstAccessibleChildAtPath } from '../core/routes'
-import {   State, NavigationOptions, DoneFn as RouterDoneFn } from '../types/base'
+import { State, NavigationOptions, DoneFn as RouterDoneFn } from '../types/base'
 
-describe('redirectToFirstAllowNode functionality', function() {
+// Suppress console.error in tests for cleaner output
+const originalConsoleError = console.error
+beforeAll(() => {
+    console.error = jest.fn()
+})
+
+afterAll(() => {
+    console.error = originalConsoleError
+})
+
+describe('redirectToFirstAllowNode functionality', function () {
     let router
 
     beforeAll(() => {
@@ -23,8 +33,8 @@ describe('redirectToFirstAllowNode functionality', function() {
                 path: '/admin',
                 redirectToFirstAllowNode: true,
                 children: [
-                    { 
-                        name: 'users', 
+                    {
+                        name: 'users',
                         path: '/users',
                         canActivate: () => (toState, fromState, done) => {
                             done(new Error('Access denied'))
@@ -38,15 +48,15 @@ describe('redirectToFirstAllowNode functionality', function() {
                 path: '/protected',
                 redirectToFirstAllowNode: true,
                 children: [
-                    { 
-                        name: 'secret1', 
+                    {
+                        name: 'secret1',
                         path: '/secret1',
                         canActivate: () => (toState, fromState, done) => {
                             done(new Error('Access denied'))
                         }
                     },
-                    { 
-                        name: 'secret2', 
+                    {
+                        name: 'secret2',
                         path: '/secret2',
                         canActivate: () => (toState, fromState, done) => {
                             done(new Error('Access denied'))
@@ -174,7 +184,7 @@ describe('redirectToFirstAllowNode functionality', function() {
     })
 })
 
-describe('redirectToFirstAllowNode - Nested Redirection', function() {
+describe('redirectToFirstAllowNode - Nested Redirection', function () {
     let nestedRouter;
 
     beforeAll(() => {
@@ -192,7 +202,7 @@ describe('redirectToFirstAllowNode - Nested Redirection', function() {
                             done(); // Should be accessible
                         },
                         children: [
-                            { 
+                            {
                                 name: 'grandchild',
                                 path: '/grandchild',
                                 canActivate: () => (_toState, _fromState, done) => {
@@ -230,7 +240,7 @@ describe('redirectToFirstAllowNode - Nested Redirection', function() {
     });
 });
 
-describe('redirectToFirstAllowNode - Interaction with defaultRoute', function() {
+describe('redirectToFirstAllowNode - Interaction with defaultRoute', function () {
     let defaultRouter;
 
     beforeAll(() => {
@@ -278,7 +288,7 @@ describe('redirectToFirstAllowNode - Interaction with defaultRoute', function() 
 
     it('should redirect to defaultRoute if it has no further redirects or children', (done) => {
         const routesNoWelcome = [
-             {
+            {
                 name: 'home',
                 path: '/home' // No redirectToFirstAllowNode, no children
             },
@@ -310,7 +320,7 @@ describe('redirectToFirstAllowNode - Interaction with defaultRoute', function() 
     });
 });
 
-describe('redirectToFirstAllowNode - Asynchronous canActivate', function() {
+describe('redirectToFirstAllowNode - Asynchronous canActivate', function () {
     let asyncRouter;
 
     beforeAll(() => {
@@ -331,7 +341,7 @@ describe('redirectToFirstAllowNode - Asynchronous canActivate', function() {
                     },
                     {
                         name: 'childFinalSimple',
-                        path: '/final-simple' 
+                        path: '/final-simple'
                     }
                 ]
             }
@@ -361,7 +371,7 @@ describe('redirectToFirstAllowNode - Asynchronous canActivate', function() {
                 path: '/async-parent-reordered',
                 redirectToFirstAllowNode: true,
                 children: [
-                     {
+                    {
                         name: 'childQuickRejectFirst',
                         path: '/quick-reject-first',
                         canActivate: () => (_toState, _fromState, done) => {
@@ -398,7 +408,7 @@ describe('redirectToFirstAllowNode - Asynchronous canActivate', function() {
     });
 });
 
-describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
+describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function () {
     let deepRouter;
 
     // Helper to create router with specific routes for this describe block
@@ -478,7 +488,7 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
                         name: 'l2_alt',
                         path: '/l2_alt',
                         children: [
-                             { name: 'l3_alt', path: '/l3_alt' }
+                            { name: 'l3_alt', path: '/l3_alt' }
                         ]
                     }
                 ]
@@ -513,11 +523,11 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
                             }
                         ]
                     },
-                    { name: 'c2', path: '/c2' } 
+                    { name: 'c2', path: '/c2' }
                 ]
             }
         ];
-        deepRouter = createDeepTestRouter(routes, {allowNotFound: true});
+        deepRouter = createDeepTestRouter(routes, { allowNotFound: true });
         deepRouter.navigate('p1', {}, (err, state) => {
             expect(err).toBeDefined();
             expect(err.code).toBe(errorCodes.TRANSITION_ERR);
@@ -566,26 +576,26 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
             done();
         });
     });
-    
+
     it('4.1. navigate to deeper node which then redirects', (done) => {
         const routes = [
             {
                 name: 'first_redirect',
                 path: '/first_redirect',
-                redirectToFirstAllowNode: true, 
+                redirectToFirstAllowNode: true,
                 children: [
                     {
                         name: 'no_redirect1',
-                        path: '/no_redirect1', 
+                        path: '/no_redirect1',
                         children: [
                             {
                                 name: 'no_redirect2',
-                                path: '/no_redirect2', 
+                                path: '/no_redirect2',
                                 children: [
                                     {
                                         name: 'last_redirect',
                                         path: '/last_redirect',
-                                        redirectToFirstAllowNode: true, 
+                                        redirectToFirstAllowNode: true,
                                         children: [
                                             { name: 'final_child', path: '/final_child' }
                                         ]
@@ -794,44 +804,46 @@ describe('redirectToFirstAllowNode - Deeply Nested Scenarios', function() {
 
     it('10. Deep redirect with sibling that is accessible but not first by sort order', (done) => {
         const routes = [
-          {
-            name: 'parentOrderTest',
-            path: '/parent-order',
-            redirectToFirstAllowNode: true,
-            children: [
-              {
-                name: 'PathWithSpatParam',
-                path: '/path-spat/:param/*spat',
+            {
+                name: 'parentOrderTest',
+                path: '/parent-order',
                 redirectToFirstAllowNode: true,
-                children: [{ name: 'childOfSpat', path: '/child-of-spat' }]
-              },
-              {
-                name: 'ShortPathNoParam',
-                path: '/short',
-                redirectToFirstAllowNode: true,
-                children: [{ name: 'childOfShort', path: '/child-of-short' }]
-              }
-            ]
-          }
+                children: [
+                    {
+                        name: 'PathWithSpatParam',
+                        path: '/path-spat/:param/*spat',
+                        redirectToFirstAllowNode: true,
+                        children: [{ name: 'childOfSpat', path: '/child-of-spat' }]
+                    },
+                    {
+                        name: 'ShortPathNoParam',
+                        path: '/short',
+                        redirectToFirstAllowNode: true,
+                        children: [{ name: 'childOfShort', path: '/child-of-short' }]
+                    }
+                ]
+            }
         ];
         deepRouter = createDeepTestRouter(routes);
         deepRouter.navigate('parentOrderTest', {}, (err, state) => {
-          expect(err).toBeNull();
-          expect(state?.name).toBe('parentOrderTest.ShortPathNoParam.childOfShort');
-          expect(state?.path).toBe('/parent-order/short/child-of-short');
-          done();
+            expect(err).toBeNull();
+            expect(state?.name).toBe('parentOrderTest.ShortPathNoParam.childOfShort');
+            expect(state?.path).toBe('/parent-order/short/child-of-short');
+            done();
         });
-      });
+    });
 });
 
 
 describe('redirectToFirstAllowNode with route addition for root route', () => {
-    let router: Router<any>; 
+    let router: Router<any>;
 
     beforeEach(() => {
-        router = createRouter([], {   allowNotFound: false,
+        router = createRouter([], {
+            allowNotFound: false,
             autoCleanUp: false,
-            defaultRoute: '404', }); 
+            defaultRoute: '404',
+        });
 
         router.start();
 
@@ -854,12 +866,12 @@ describe('redirectToFirstAllowNode with route addition for root route', () => {
 
         const childrenForHomeConfig: Route[] = [
             {
-                name: 'home', 
+                name: 'home',
                 path: '/',
-                children: [ 
+                children: [
                     {
-                        name: 'api', 
-                        path: '/api', 
+                        name: 'api',
+                        path: '/api',
                         children: [
                             { name: 'anotherChild', path: '/anotherChild' }
                         ]
@@ -868,7 +880,7 @@ describe('redirectToFirstAllowNode with route addition for root route', () => {
             }
         ];
         router.add(childrenForHomeConfig);
-        
+
     });
 
     afterEach(() => {
@@ -882,7 +894,7 @@ describe('redirectToFirstAllowNode with route addition for root route', () => {
         if (router.config.redirectToFirstAllowNodeMap) {
             expect(router.config.redirectToFirstAllowNodeMap['home']).toBe(true);
         }
-        
+
         expect(router.buildPath('home.zzz')).toBe(
             '/zzz'
         )
@@ -897,7 +909,7 @@ describe('redirectToFirstAllowNode with route addition for root route', () => {
                 expect(err).toBeNull()
                 expect(state?.name).toBe(`home.zzz`);
                 expect(state?.path).toBe('/zzz');
-                
+
                 done();
             } catch (e) {
                 done(e);

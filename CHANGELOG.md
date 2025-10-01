@@ -1,10 +1,14 @@
 # Changelog
 
+## [1.0.3](https://github.com/riogod/router/compare/v1.0.2...v1.0.3) (2025-10-01)
 
+### ✨ Features
 
+- **router**: add support for composite route names ([f8351e9](https://github.com/riogod/router/commit/f8351e9bee4a254ffdf278977687086c61984dab))
 
+### 🐛 Bug Fixes
 
-
+- **router**: make lifecycle hooks non-blocking for faster navigation ([c8492ad](https://github.com/riogod/router/commit/c8492adee546be23d96a983f5c4c53b30c023c2f))
 
 
 ## [1.0.2](https://github.com/riogod/router/compare/v1.0.1...v1.0.2) (2025-06-23)

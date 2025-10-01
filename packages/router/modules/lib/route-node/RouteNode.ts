@@ -158,7 +158,7 @@ export class RouteNode {
           }
         }
       }
-      
+
       if (route.children && route.children.length > 0) {
         routeNode.add(route.children, cb, sort)
       }
@@ -235,21 +235,21 @@ export class RouteNode {
 
     // Copy other custom properties from `this` to `clonedNode`
     for (const key in this) {
-        if (Object.prototype.hasOwnProperty.call(this, key)) {
-            if (!['name', 'path', 'children', 'parent', 'absolute', 'parser'].includes(key)) {
-                (clonedNode as any)[key] = (this as any)[key];
-            }
+      if (Object.prototype.hasOwnProperty.call(this, key)) {
+        if (!['name', 'path', 'children', 'parent', 'absolute', 'parser'].includes(key)) {
+          (clonedNode as any)[key] = (this as any)[key];
         }
+      }
     }
 
     // After custom props are copied, now add children definitions (if any) to the clone
     // This ensures that if children themselves have custom props, they are handled by the standard `add` process
     if (this.children.length > 0) {
-        this.children.forEach(child => {
-            clonedNode.add(child.clone(), undefined, false); // Add a CLONE of the child
-        });
+      this.children.forEach(child => {
+        clonedNode.add(child.clone(), undefined, false); // Add a CLONE of the child
+      });
     }
-    
+
     // If the original node had finalSort true in its options, we might want to call sortDescendants
     // For now, the caller of clone or subsequent operations should handle final sorting if needed.
     // Example: if clone is used in `addRouteNode`, the `sort` param there will handle it for the parent.
@@ -343,17 +343,17 @@ export class RouteNode {
     // 1. Update path (with sibling conflict check)
     // Update path only if it's different, and check for conflicts
     if (this.path !== sourceNode.path) {
-        if (this.parent) { // Path conflict check is relevant if there's a parent with other children
-            const conflictingSibling = this.parent.children.find(
-                sibling => sibling !== this && sibling.path === sourceNode.path
-            );
-            if (conflictingSibling) {
-                throw new Error(
-                    `Path "${sourceNode.path}" for route "${this.name}" conflicts with existing sibling route "${conflictingSibling.name}".`
-                );
-            }
+      if (this.parent) { // Path conflict check is relevant if there's a parent with other children
+        const conflictingSibling = this.parent.children.find(
+          sibling => sibling !== this && sibling.path === sourceNode.path
+        );
+        if (conflictingSibling) {
+          throw new Error(
+            `Path "${sourceNode.path}" for route "${this.name}" conflicts with existing sibling route "${conflictingSibling.name}".`
+          );
         }
-        this.setPath(sourceNode.path);
+      }
+      this.setPath(sourceNode.path);
     }
 
     // 2. Update other relevant properties from sourceNode to `this`.
@@ -362,32 +362,32 @@ export class RouteNode {
     // to the node's identity and structure, so we skip them here.
     // The 'path' is handled above with setPath.
     for (const key in sourceNode) {
-        if (Object.prototype.hasOwnProperty.call(sourceNode, key)) {
-            if (!['name', 'path', 'children', 'parent', 'absolute', 'parser'].includes(key)) {
-                // Directly assign the value from sourceNode to this node.
-                // This allows custom properties from RouteDefinition to be transferred.
-                (this as any)[key] = (sourceNode as any)[key];
-            }
+      if (Object.prototype.hasOwnProperty.call(sourceNode, key)) {
+        if (!['name', 'path', 'children', 'parent', 'absolute', 'parser'].includes(key)) {
+          // Directly assign the value from sourceNode to this node.
+          // This allows custom properties from RouteDefinition to be transferred.
+          (this as any)[key] = (sourceNode as any)[key];
         }
+      }
     }
 
     // 3. Update/add child nodes.
     // Child nodes from `sourceNode` are used to update/add to the child nodes of `this`.
     // Existing child nodes in `this` that are not mentioned by name in `sourceNode.children` will remain.
     if (sourceNode.children && sourceNode.children.length > 0) {
-        sourceNode.children.forEach(childFromSource => {
-            // Call addRouteNode on `this` (the node being updated) for each child from the source.
-            // `addRouteNode` will handle updating an existing child or adding a new one.
-            const childClone = childFromSource.clone(); // Clone the child from source
-            // Ensure the clone has no parent initially, so it can be correctly parented by `this`
-            // if added as a new node, or its properties used for update if it matches an existing child of `this`.
-            // The clone() method already ensures the new node has no parent.
-            this.addRouteNode(childClone, false); // Defer sorting until the end
-        });
+      sourceNode.children.forEach(childFromSource => {
+        // Call addRouteNode on `this` (the node being updated) for each child from the source.
+        // `addRouteNode` will handle updating an existing child or adding a new one.
+        const childClone = childFromSource.clone(); // Clone the child from source
+        // Ensure the clone has no parent initially, so it can be correctly parented by `this`
+        // if added as a new node, or its properties used for update if it matches an existing child of `this`.
+        // The clone() method already ensures the new node has no parent.
+        this.addRouteNode(childClone, false); // Defer sorting until the end
+      });
     }
 
     if (sortChildrenFlag) {
-        this.sortChildren();
+      this.sortChildren();
     }
   }
 
@@ -395,52 +395,49 @@ export class RouteNode {
     const names = route.name.split('.');
 
     if (names.length === 1) {
-        // Find an existing child node with the same name
-        const existingChild = this.children.find(child => child.name === route.name);
+      // Find an existing child node with the same name
+      const existingChild = this.children.find(child => child.name === route.name);
 
-        if (existingChild) {
-            // === UPDATE EXISTING CHILD NODE ===
-            existingChild._updateWith(route, sort); // Use the helper method to update
-        } else {
-            // === ADD NEW CHILD NODE ===
-            // Check for duplicate path only among other existing child nodes
-            if (this.children.some(child => child.path === route.path)) {
-                throw new Error(
-                    `Path "${route.path}" is already defined in another route node ("${this.children.find(c => c.path === route.path)?.name || 'unknown'}") at this level.`
-                );
-            }
-            route.setParent(this); // Ensure parent is set before adding
-            this.children.push(route);
-            if (sort) {
-                this.sortChildren();
-            }
+      if (existingChild) {
+        // === UPDATE EXISTING CHILD NODE ===
+        existingChild._updateWith(route, sort); // Use the helper method to update
+      } else {
+        // === ADD NEW CHILD NODE ===
+        // Check for duplicate path only among other existing child nodes
+        if (this.children.some(child => child.path === route.path)) {
+          throw new Error(
+            `Path "${route.path}" is already defined in another route node ("${this.children.find(c => c.path === route.path)?.name || 'unknown'}") at this level.`
+          );
         }
+        route.setParent(this); // Ensure parent is set before adding
+        this.children.push(route);
+        if (sort) {
+          this.sortChildren();
+        }
+      }
     } else {
-        const parentName = names.slice(0, -1).join('.');
-        const childSimpleName = names[names.length - 1];
+      const parentName = names.slice(0, -1).join('.');
+      const childSimpleName = names[names.length - 1];
 
+      // Check if direct parent is current node without aliasing this
+      const currentLastSegment = this.name.split('.').pop();
+      if (parentName === this.name || parentName === currentLastSegment) {
+        const nodeToProcess = route.clone();
+        nodeToProcess.name = childSimpleName;
+        this.add(nodeToProcess, undefined, sort);
+      } else {
         const segments = this.getSegmentsByName(parentName);
         if (segments && segments.length > 0) {
-            const directParentNode = segments[segments.length - 1];
-
-            // Create a clone from `route` to work with.
-            // The original `route` (argument) will remain untouched.
-            const nodeToProcess = route.clone();
-            nodeToProcess.name = childSimpleName; // Set the simple name for the clone.
-                                                  // Children of this clone already have simple names relative to it (due to how clone works).
-
-            // Now pass this prepared clone to the public `add` method of the parent.
-            // The public `add` will call setParent and then addRouteNode (this same method) on `directParentNode`.
-            // Since `nodeToProcess.name` is now simple, it will fall into the first branch (if names.length === 1).
-            directParentNode.add(nodeToProcess, undefined, sort);
-            
-            // The name of the original `route` (argument) was not changed.
-            // The name of `nodeToProcess` was changed, but it's a local copy.
+          const directParentNode = segments[segments.length - 1];
+          const nodeToProcess = route.clone();
+          nodeToProcess.name = childSimpleName;
+          directParentNode.add(nodeToProcess, undefined, sort);
         } else {
-            throw new Error(
-                `Could not add route named '${names.join('.')}', parent segment '${parentName}' is missing.`
-            );
+          throw new Error(
+            `Could not add route named '${names.join('.')}', parent segment '${parentName}' is missing.`
+          );
         }
+      }
     }
     return this;
   }
