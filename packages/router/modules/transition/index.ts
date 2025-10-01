@@ -105,10 +105,10 @@ export default function transition(
         onNodeInActiveChain: onNodeInActiveChainFunctions
     } = router.getRouteLifecycleFunctions()
     const browserTitleFunctions = router.getBrowserTitleFunctions()
-    
+
     /** Check if the transition has been cancelled */
     const isCancelled = () => cancelled
-    
+
     /** Cancel the ongoing transition */
     const cancel = () => {
         if (!cancelled && !completed) {
@@ -116,7 +116,7 @@ export default function transition(
             callback({ code: errorCodes.TRANSITION_CANCELLED }, null)
         }
     }
-    
+
     /** Complete the transition with success or error */
     const done = (err, state) => {
         completed = true
@@ -135,7 +135,7 @@ export default function transition(
 
         callback(err, state || toState)
     }
-    
+
     /** Create error object with additional context */
     const makeError = (base, err) => ({
         ...base,
@@ -146,7 +146,7 @@ export default function transition(
         .then(resolvedToState => {
             // Check if cancellation happened during async redirect resolution
             if (isCancelled()) return;
-            
+
             // Continue with the main transition logic using the fully resolved state
             continueTransition(resolvedToState);
         })
@@ -154,29 +154,29 @@ export default function transition(
             // This catch is for errors specifically from resolveRedirectChain itself (e.g., programming errors within it)
             // Errors related to canActivate within findFirstAccessibleChild should be handled inside resolveRedirectChain
             // or result in a state that continueTransition can handle (like UNKNOWN_ROUTE).
-            console.error('Critical error in resolveRedirectChain:', err); 
+            console.error('Critical error in resolveRedirectChain:', err);
             callback(makeError({ code: errorCodes.TRANSITION_ERR }, err), null);
         });
-    
+
     // Return cancel function immediately
     // The actual transition logic is now asynchronous due to resolveRedirectChain
     return cancel;
-    
+
     function continueTransition(finalToState: State) {
         // Update toState to use the final resolved state
         toState = finalToState
-        
+
         // Update asyncBase to reference the new toState
         const updatedAsyncBase = { isCancelled, toState, fromState }
-        
+
         // Recalculate transition path with the final state
         const { toDeactivate: finalToDeactivate, toActivate: finalToActivate, intersection: finalIntersection } = transitionPath(toState, fromState)
-        
+
         // Calculate routes that remain on the path (for onNodeInActiveChain)
         const fromStateIds = fromState ? nameToIDs(fromState.name) : []
         const toStateIds = nameToIDs(toState.name)
         const intersectionIndex = finalIntersection ? fromStateIds.indexOf(finalIntersection) : -1
-        
+
         let onPath = []
         if (fromState) {
             // Normal transition - routes that remain on the path
@@ -194,106 +194,112 @@ export default function transition(
             !fromState || opts.forceDeactivate
                 ? []
                 : (toState, fromState, cb) => {
-                      const canDeactivateFunctionMap = finalToDeactivate
-                          .filter(name => canDeactivateFunctions[name])
-                          .reduce(
-                              (fnMap, name) => ({
-                                  ...fnMap,
-                                  [name]: canDeactivateFunctions[name]
-                              }),
-                              {}
-                          )
+                    const canDeactivateFunctionMap = finalToDeactivate
+                        .filter(name => canDeactivateFunctions[name])
+                        .reduce(
+                            (fnMap, name) => ({
+                                ...fnMap,
+                                [name]: canDeactivateFunctions[name]
+                            }),
+                            {}
+                        )
 
-                      resolve(
-                          canDeactivateFunctionMap,
-                          { ...updatedAsyncBase, errorKey: 'segment' },
-                          err =>
-                              cb(
-                                  err
-                                      ? makeError(
-                                            { code: errorCodes.CANNOT_DEACTIVATE },
-                                            err
-                                        )
-                                      : null
-                              )
-                      )
-                  }
+                    resolve(
+                        canDeactivateFunctionMap,
+                        { ...updatedAsyncBase, errorKey: 'segment' },
+                        err =>
+                            cb(
+                                err
+                                    ? makeError(
+                                        { code: errorCodes.CANNOT_DEACTIVATE },
+                                        err
+                                    )
+                                    : null
+                            )
+                    )
+                }
 
         /** Handle route activation guards */
         const canActivate = isUnknownRoute
             ? []
             : (toState, fromState, cb) => {
-                  const canActivateFunctionMap = finalToActivate
-                      .filter(name => canActivateFunctions[name])
-                      .reduce(
-                          (fnMap, name) => ({
-                              ...fnMap,
-                              [name]: canActivateFunctions[name]
-                          }),
-                          {}
-                      )
+                const canActivateFunctionMap = finalToActivate
+                    .filter(name => canActivateFunctions[name])
+                    .reduce(
+                        (fnMap, name) => ({
+                            ...fnMap,
+                            [name]: canActivateFunctions[name]
+                        }),
+                        {}
+                    )
 
-                  resolve(
-                      canActivateFunctionMap,
-                      { ...updatedAsyncBase, errorKey: 'segment' },
-                      err =>
-                          cb(
-                              err
-                                  ? makeError(
-                                        { code: errorCodes.CANNOT_ACTIVATE },
-                                        err
-                                    )
-                                  : null
-                          )
-                  )
-              }
+                resolve(
+                    canActivateFunctionMap,
+                    { ...updatedAsyncBase, errorKey: 'segment' },
+                    err =>
+                        cb(
+                            err
+                                ? makeError(
+                                    { code: errorCodes.CANNOT_ACTIVATE },
+                                    err
+                                )
+                                : null
+                        )
+                )
+            }
 
         /** Handle route exit lifecycle hooks */
         const onExitNode = !fromState || !finalToDeactivate.length
             ? []
             : (toState, fromState, cb) => {
-                  const onExitPromises = finalToDeactivate
-                      .filter(name => onExitNodeFunctions[name])
-                      .map(name => onExitNodeFunctions[name](toState, fromState))
-
-                  Promise.all(onExitPromises)
-                      .then(() => cb(null))
-                      .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
-              }
+                // Run lifecycle hooks in background (fire-and-forget)
+                finalToDeactivate.forEach((name) => {
+                    const hook = onExitNodeFunctions[name]
+                    if (hook) {
+                        hook(toState, fromState)
+                    }
+                })
+                // Call callback immediately - don't wait for hooks to complete
+                cb(null)
+            }
 
         /** Handle route enter lifecycle hooks */
         const onEnterNode = isUnknownRoute || !finalToActivate.length
             ? []
             : (toState, fromState, cb) => {
-                  const onEnterPromises = finalToActivate
-                      .filter(name => onEnterNodeFunctions[name])
-                      .map(name => onEnterNodeFunctions[name](toState, fromState))
-
-                  Promise.all(onEnterPromises)
-                      .then(() => cb(null))
-                      .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
-              }
+                // Run lifecycle hooks in background (fire-and-forget)
+                finalToActivate.forEach((name) => {
+                    const hook = onEnterNodeFunctions[name]
+                    if (hook) {
+                        hook(toState, fromState)
+                    }
+                })
+                // Call callback immediately - don't wait for hooks to complete
+                cb(null)
+            }
 
         /** Handle active chain lifecycle hooks for routes that remain on the path */
         const onNodeInActiveChain = !onPath.length
             ? []
             : (toState, fromState, cb) => {
-                  const onNodeInActiveChainPromises = onPath
-                      .filter(name => onNodeInActiveChainFunctions[name])
-                      .map(name => onNodeInActiveChainFunctions[name](toState, fromState))
-
-                  Promise.all(onNodeInActiveChainPromises)
-                      .then(() => cb(null))
-                      .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
-              }
+                // Run lifecycle hooks in background (fire-and-forget)
+                onPath.forEach((name) => {
+                    const hook = onNodeInActiveChainFunctions[name]
+                    if (hook) {
+                        hook(toState, fromState)
+                    }
+                })
+                // Call callback immediately - don't wait for hooks to complete
+                cb(null)
+            }
 
         /** Update browser title based on the current route */
         const updateBrowserTitle = (toState, fromState, cb) => {
             const toStateIds = nameToIDs(toState.name)
-            
+
             // Find the most specific route that has a browserTitle
             let titleHandler = null
-            
+
             for (let i = toStateIds.length - 1; i >= 0; i--) {
                 const routeName = toStateIds[i]
                 if (browserTitleFunctions[routeName]) {
@@ -301,7 +307,7 @@ export default function transition(
                     break
                 }
             }
-            
+
             if (titleHandler) {
                 try {
                     if (typeof titleHandler === 'string') {
@@ -309,40 +315,39 @@ export default function transition(
                         if (typeof document !== 'undefined') {
                             document.title = titleHandler
                         }
-                        cb(null)
                     } else if (typeof titleHandler === 'function') {
-                        // Function that returns title
+                        // Function that returns title - run in background
                         Promise.resolve(titleHandler(toState))
-                            .then(title => {
+                            .then((title) => {
                                 if (typeof document !== 'undefined') {
                                     document.title = title
                                 }
-                                cb(null)
                             })
-                            .catch(err => cb(makeError({ code: errorCodes.TRANSITION_ERR }, err)))
-                    } else {
-                        cb(null)
+                            .catch(() => {
+                                // Ignore errors in browserTitle functions
+                            })
                     }
                 } catch (err) {
-                    cb(makeError({ code: errorCodes.TRANSITION_ERR }, err))
+                    // Ignore errors in browserTitle functions
                 }
-            } else {
-                cb(null)
             }
+
+            // Call callback immediately - don't wait for title update to complete
+            cb(null)
         }
 
         /** Handle middleware execution */
         const middleware = !middlewareFunctions.length
             ? []
             : (toState, fromState, cb) =>
-                  resolve(middlewareFunctions, { ...updatedAsyncBase }, (err, state) =>
-                      cb(
-                          err
-                              ? makeError({ code: errorCodes.TRANSITION_ERR }, err)
-                              : null,
-                          state || toState
-                      )
-                  )
+                resolve(middlewareFunctions, { ...updatedAsyncBase }, (err, state) =>
+                    cb(
+                        err
+                            ? makeError({ code: errorCodes.TRANSITION_ERR }, err)
+                            : null,
+                        state || toState
+                    )
+                )
 
         // Build the execution pipeline in the correct order
         const pipeline = []
