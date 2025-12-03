@@ -1,6 +1,6 @@
 {
   "name": "@riogz/react-router",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "React integration for @riogz/router",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -30,14 +30,14 @@
   "author": "Vyacheslav Krasnyanskiy",
   "license": "MIT",
   "dependencies": {
-    "@riogz/router-transition-path": "^1.0.3"
+    "@riogz/router-transition-path": "^1.0.4"
   },
   "devDependencies": {
-    "@riogz/router": "^1.0.3"
+    "@riogz/router": "^1.0.4"
   },
   "peerDependencies": {
     "react": ">=17.0.0",
-    "@riogz/router": "^1.0.3"
+    "@riogz/router": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"
