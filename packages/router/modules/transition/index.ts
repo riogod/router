@@ -26,10 +26,19 @@ async function resolveRedirectChain(router: Router, currentState: State | null):
     if (firstAccessibleChildName) {
         const childStateCandidate = router.buildState(firstAccessibleChildName, currentState.params);
         if (childStateCandidate) {
+            let childPath: string;
+            try {
+                childPath = router.buildPath(childStateCandidate.name, childStateCandidate.params);
+            } catch (buildPathError) {
+                // If route does not exist (e.g., due to forwardTo pointing to non-existent route),
+                // return current state instead of continuing the redirect chain
+                return currentState;
+            }
+
             const fullChildStateCandidate = router.makeState(
                 childStateCandidate.name,
                 childStateCandidate.params,
-                router.buildPath(childStateCandidate.name, childStateCandidate.params),
+                childPath,
                 currentState.meta // Передаем meta от родителя
             );
             // Рекурсивно проверяем следующую ноду в цепочке

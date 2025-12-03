@@ -546,10 +546,19 @@ export async function findFirstAccessibleChildAtPath(router: Router, routeName: 
             continue;
         }
 
+        let childPath: string;
+        try {
+            childPath = router.buildPath(childState.name, childState.params);
+        } catch (buildPathError) {
+            // If route does not exist (e.g., due to forwardTo pointing to non-existent route),
+            // skip this child and continue searching
+            continue;
+        }
+
         const fullChildState = router.makeState(
             childState.name,
             childState.params,
-            router.buildPath(childState.name, childState.params)
+            childPath
         );
 
         const canActivateHandler = canActivateFunctions[childFullName];
