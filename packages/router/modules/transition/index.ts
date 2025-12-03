@@ -163,10 +163,18 @@ export default function transition(
             // This catch is for errors specifically from resolveRedirectChain itself (e.g., programming errors within it)
             // Errors related to canActivate within findFirstAccessibleChild should be handled inside resolveRedirectChain
             // or result in a state that continueTransition can handle (like UNKNOWN_ROUTE).
-            // Only log non-test errors (JestAssertionError is from test assertions, not actual errors)
-            if (!err || !err.constructor || err.constructor.name !== 'JestAssertionError') {
+            //
+            // Always log the error in production environments so real issues are not masked.
+            // In test environments (NODE_ENV === 'test') logging can be noisy, so we suppress it there.
+            const isTestEnv =
+                typeof process !== 'undefined' &&
+                process.env &&
+                process.env.NODE_ENV === 'test';
+
+            if (!isTestEnv) {
                 console.error('Critical error in resolveRedirectChain:', err);
             }
+
             callback(makeError({ code: errorCodes.TRANSITION_ERR }, err), null);
         });
 
