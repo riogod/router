@@ -161,10 +161,33 @@ export default function withNavigation<Dependencies>(
             return
         }
 
+        let routePath: string;
+        try {
+            routePath = router.buildPath(route.name, route.params);
+        } catch (buildPathError) {
+            // If buildPath threw an error (e.g., due to forwardTo pointing to non-existent route),
+            // return ROUTE_NOT_FOUND error
+            const err = { 
+                code: errorCodes.ROUTE_NOT_FOUND, 
+                route: {
+                    name: route.name,
+                    params: route.params
+                }  
+            };
+            done(err);
+            router.invokeEventListeners(
+                constants.TRANSITION_ERROR,
+                null,
+                router.getState(),
+                err
+            );
+            return;
+        }
+
         const toState = router.makeState(
             route.name,
             route.params,
-            router.buildPath(route.name, route.params),
+            routePath,
             { params: route.meta, options: opts }
         )
         const sameStates = router.getState()

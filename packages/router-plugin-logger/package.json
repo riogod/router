@@ -1,6 +1,6 @@
 {
   "name": "@riogz/router-plugin-logger",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "This package provides a logging plugin for @riogz/router",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.es.js",
@@ -25,10 +25,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@riogz/router": "^1.0.3"
+    "@riogz/router": "^1.0.4"
   },
   "peerDependencies": {
-    "@riogz/router": "^1.0.3"
+    "@riogz/router": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"

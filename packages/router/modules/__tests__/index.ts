@@ -1,7 +1,8 @@
 import createRouter from '../'
 import { RouteNode } from '../lib/route-node'
-import { constants } from '../constants'
+import { constants, errorCodes } from '../constants'
 import { createTestRouter } from './helpers'
+import { findFirstAccessibleChildAtPath } from '../core/routes'
 
 describe('router', () => {
     describe('createRouter', () => {
@@ -259,6 +260,131 @@ describe('Router core API (forward, buildPath, matchPath, setRootPath)', () => {
             expect(match2.params).toEqual({ id: '123', decoded: true });
             expect(match2.path).toBe('/user/123/');
         }
+    });
+
+    it('should not forward when forwardTo points to non-existent route', () => {
+        const routes = [
+            { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+        ];
+        const router = createRouter(routes);
+
+        // forwardTo should be registered in forwardMap
+        expect(router.config.forwardMap['source']).toBe('nonexistent.route');
+
+        // buildState should return null since the target route does not exist
+        const state = router.buildState('source', {});
+        expect(state).toBeNull();
+
+        // buildPath should return path for the original route since forwarding does not occur
+        const path = router.buildPath('source', {});
+        expect(path).toBe('/source');
+    });
+
+    it('should return ROUTE_NOT_FOUND error when navigating to route with forwardTo pointing to non-existent route', done => {
+        const routes = [
+            { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+        ];
+        const router = createRouter(routes);
+        router.start('', () => {
+            router.navigate('source', function(err) {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                expect(err.route).toBeDefined();
+                // Error uses the original route name since navigation was to 'source'
+                expect(err.route.name).toBe('source');
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    it('should handle buildPath error gracefully when forwardTo points to non-existent route during navigation', done => {
+        const routes = [
+            { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+        ];
+        const router = createRouter(routes);
+        router.start('', () => {
+            // Verify that buildPath throws an error when called directly
+            expect(() => {
+                router.buildPath('nonexistent.route', {});
+            }).toThrow();
+
+            // But during navigation, the error is handled correctly via callback
+            router.navigate('source', function(err) {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                expect(err.route.name).toBe('source');
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    it('should skip children with forwardTo pointing to non-existent route in findFirstAccessibleChildAtPath', async () => {
+        const routes = [
+            {
+                name: 'parent',
+                path: '/',
+                redirectToFirstAllowNode: true,
+                children: [
+                    { name: 'child1', path: '/child1', forwardTo: 'nonexistent.route' },
+                    { name: 'child2', path: '/child2' }
+                ]
+            }
+        ];
+        const router = createRouter(routes);
+
+        // findFirstAccessibleChildAtPath should skip child1 (with forwardTo pointing to non-existent route)
+        // and return child2
+        const firstAccessible = await findFirstAccessibleChildAtPath(router, 'parent', {});
+        expect(firstAccessible).toBe('parent.child2');
+    });
+
+    it('should handle forwardTo to non-existent route in redirectToFirstAllowNode chain', done => {
+        const routes = [
+            {
+                name: 'app',
+                path: '/app',
+                redirectToFirstAllowNode: true,
+                children: [
+                    { name: 'dashboard', path: '/dashboard', forwardTo: 'nonexistent.route' },
+                    { name: 'settings', path: '/settings' }
+                ]
+            }
+        ];
+        const router = createRouter(routes);
+        router.start('', () => {
+            // When navigating to app, should skip dashboard (with forwardTo pointing to non-existent route)
+            // and redirect to settings
+            router.navigate('app', function(err, state) {
+                expect(err).toBeNull();
+                expect(state).toBeDefined();
+                expect(state.name).toBe('app.settings');
+                expect(state.path).toBe('/app/settings');
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    it('should return current state when all children have forwardTo pointing to non-existent routes', async () => {
+        const routes = [
+            {
+                name: 'parent',
+                path: '/parent',
+                redirectToFirstAllowNode: true,
+                children: [
+                    { name: 'child1', path: '/child1', forwardTo: 'nonexistent1.route' },
+                    { name: 'child2', path: '/child2', forwardTo: 'nonexistent2.route' }
+                ]
+            }
+        ];
+        const router = createRouter(routes);
+
+        // If all children have forwardTo pointing to non-existent routes,
+        // findFirstAccessibleChildAtPath should return null
+        const firstAccessible = await findFirstAccessibleChildAtPath(router, 'parent', {});
+        expect(firstAccessible).toBeNull();
     });
 
     it('router.setRootPath should update the root path for building and matching', () => {
