@@ -1,5 +1,12 @@
 # Changelog
 
+
+## [1.0.5](https://github.com/riogod/router/compare/v1.0.4...v1.0.5) (2025-12-03)
+
+### 🐛 Bug Fixes
+
+- **router**: improve error logging in transition handling ([e9aae86](https://github.com/riogod/router/commit/e9aae868e16fe7d5401771b7b3ec2c1538590c4d))
+
 ## [1.0.4](https://github.com/riogod/router/compare/v1.0.3...v1.0.4) (2025-12-03)
 
 ### 🐛 Bug Fixes
