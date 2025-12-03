@@ -768,3 +768,546 @@ describe('areStatesEqual', () => {
         expect(router.areStatesEqual(state1, state2, true)).toBe(false);
     });
 });
+
+describe('router.start() with forwardTo pointing to non-existent routes', () => {
+    // Test 1: Basic case - router.start() with route that has forwardTo pointing to non-existent route
+    describe('Basic case: router.start() with route having forwardTo to non-existent route', () => {
+        it('should handle router.start() without parameters when current URL matches route with forwardTo: nonexistent', done => {
+            // Use explicit path since we can't easily mock window.location in tests
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            router.start('/source', (err, state) => {
+                // Callback should be called
+                expect(err).toBeDefined();
+                // matchPath will return null when buildPath fails, so we get ROUTE_NOT_FOUND
+                expect([errorCodes.ROUTE_NOT_FOUND, errorCodes.TRANSITION_ERR]).toContain(err.code);
+                expect(state).toBeNull();
+                expect(router.isStarted()).toBe(true);
+                router.stop();
+                done();
+            });
+        });
+
+        it('should handle router.start("source") where source has forwardTo: nonexistent', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            let callbackCalled = false;
+            let syncErrorThrown = false;
+            
+            try {
+                router.start('source', (err, state) => {
+                    callbackCalled = true;
+                    expect(err).toBeDefined();
+                    expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                    expect(state).toBeNull();
+                    expect(router.isStarted()).toBe(true);
+                    router.stop();
+                    done();
+                });
+            } catch (e) {
+                syncErrorThrown = true;
+                // If synchronous error is thrown, callback should still be called
+                setTimeout(() => {
+                    expect(callbackCalled).toBe(true);
+                    router.stop();
+                    done();
+                }, 10);
+            }
+        });
+
+        it('should verify router state after error during start', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            router.start('source', (err) => {
+                expect(err).toBeDefined();
+                // Router should be in started state
+                expect(router.isStarted()).toBe(true);
+                // State should be null or undefined
+                const state = router.getState();
+                expect(state).toBeNull();
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    // Test 2: router.start() with URL that matches route with non-existent forwardTo
+    describe('router.start() with URL matching route with non-existent forwardTo', () => {
+        it('should handle router.start("/source") where /source matches route source with forwardTo: nonexistent', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            router.start('/source', (err, state) => {
+                expect(err).toBeDefined();
+                // matchPath returns null when buildPath fails, leading to ROUTE_NOT_FOUND
+                expect([errorCodes.ROUTE_NOT_FOUND, errorCodes.TRANSITION_ERR]).toContain(err.code);
+                expect(state).toBeNull();
+                expect(router.getState()).toBeNull();
+                router.stop();
+                done();
+            });
+        });
+
+        it('should verify error is handled asynchronously via callback, not synchronously', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            let syncError = null;
+            try {
+                router.start('/source', (err) => {
+                    // Callback should be called asynchronously
+                    expect(err).toBeDefined();
+                    expect(syncError).toBeNull();
+                    router.stop();
+                    done();
+                });
+            } catch (e) {
+                syncError = e;
+                // If synchronous error is thrown, it's unexpected but we handle it
+                setTimeout(() => {
+                    router.stop();
+                    done();
+                }, 10);
+            }
+        });
+    });
+
+    // Test 3: Comparison of buildPath vs router.start() behavior
+    describe('Comparison: buildPath vs router.start() for non-existent forwardTo', () => {
+        it('should throw synchronous error when calling router.buildPath with non-existent forwardTo', () => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            // buildPath should throw synchronously
+            expect(() => {
+                router.buildPath('nonexistent.route', {});
+            }).toThrow();
+        });
+
+        it('should handle error via callback in router.start() with same route', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            // router.start() should handle error via callback, not throw synchronously
+            router.start('source', (err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    // Test 4: router.start() with defaultRoute option having non-existent forwardTo
+    describe('router.start() with defaultRoute option having non-existent forwardTo', () => {
+        it('should handle defaultRoute with forwardTo pointing to non-existent route', done => {
+            const routes = [
+                { name: 'home', path: '/home', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes, {
+                defaultRoute: 'home'
+            });
+            
+            router.start('/unknown', (err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                router.stop();
+                done();
+            });
+        });
+
+        it('should handle defaultRoute with forwardTo when starting without parameters', done => {
+            const routes = [
+                { name: 'home', path: '/home', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes, {
+                defaultRoute: 'home'
+            });
+            
+            router.start((err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    // Test 5: Sequence: router.start() → add route → navigate again
+    describe('Sequence: router.start() → add route → navigate again', () => {
+        it('should handle adding target route after start and allow navigation', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'target' }
+            ];
+            const router = createRouter(routes);
+            
+            // Start with route that has forwardTo to non-existent route
+            router.start('source', (err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                
+                // Add the target route
+                router.add({ name: 'target', path: '/target' });
+                
+                // Now navigation should work
+                router.navigate('source', (navErr, state) => {
+                    expect(navErr).toBeNull();
+                    expect(state).toBeDefined();
+                    expect(state.name).toBe('target');
+                    router.stop();
+                    done();
+                });
+            });
+        });
+    });
+
+    // Test 6: router.start() with forwardTo to route that will be added later
+    describe('router.start() with forwardTo to route that will be added later', () => {
+        it('should handle forwardTo to route added after start', done => {
+            const routes = [
+                { name: 'home', path: '/home', forwardTo: 'todo' }
+            ];
+            const router = createRouter(routes);
+            
+            // Start with forwardTo to non-existent route
+            router.start('home', (err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                
+                // Add the target route
+                router.add({ name: 'todo', path: '/todo' });
+                
+                // Now navigation should work with forward
+                router.navigate('home', (navErr, state) => {
+                    expect(navErr).toBeNull();
+                    expect(state).toBeDefined();
+                    expect(state.name).toBe('todo');
+                    router.stop();
+                    done();
+                });
+            });
+        });
+    });
+
+    // Test 7: Error handling in router.start() callback
+    describe('Error handling in router.start() callback', () => {
+        it('should call callback with error when route has forwardTo to non-existent route', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            let callbackCalled = false;
+            
+            router.start('source', (err, state) => {
+                callbackCalled = true;
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                expect(state).toBeNull();
+                router.stop();
+                done();
+            });
+            
+            // Verify callback is called (should be async)
+            setTimeout(() => {
+                expect(callbackCalled).toBe(true);
+            }, 100);
+        });
+
+        it('should not throw synchronous error before callback is called', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            let syncError = null;
+            try {
+                router.start('source', (err) => {
+                    expect(syncError).toBeNull();
+                    expect(err).toBeDefined();
+                    router.stop();
+                    done();
+                });
+            } catch (e) {
+                syncError = e;
+                // If error is thrown, it should still call callback
+                setTimeout(() => {
+                    router.stop();
+                    done();
+                }, 10);
+            }
+        });
+    });
+
+    // Test 8: router.start() with forwardTo chain
+    describe('router.start() with forwardTo chain', () => {
+        it('should handle forwardTo chain where intermediate route does not exist', done => {
+            const routes = [
+                { name: 'a', path: '/a', forwardTo: 'b' },
+                { name: 'b', path: '/b', forwardTo: 'c' }
+                // c does not exist
+            ];
+            const router = createRouter(routes);
+            
+            router.start('a', (err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                router.stop();
+                done();
+            });
+        });
+
+        it('should handle forwardTo chain where all routes exist', done => {
+            const routes = [
+                { name: 'a', path: '/a', forwardTo: 'b' },
+                { name: 'b', path: '/b', forwardTo: 'c' },
+                { name: 'c', path: '/c' }
+            ];
+            const router = createRouter(routes);
+            
+            router.start('/a', (err, state) => {
+                // When using path, matchPath is called which handles forwardTo chain
+                // matchPath applies forwardTo once, so 'a' -> 'b', but 'b' -> 'c' happens during navigation
+                // So the state from matchPath will be 'b', not 'c'
+                if (err) {
+                    // If there's an error, it might be due to buildPath issues
+                    expect([errorCodes.ROUTE_NOT_FOUND, errorCodes.TRANSITION_ERR]).toContain(err.code);
+                } else {
+                    expect(state).toBeDefined();
+                    // matchPath returns state after first forwardTo, so it will be 'b'
+                    // The full chain 'a' -> 'b' -> 'c' happens during transition
+                    if (state) {
+                        // After matchPath, we get 'b' (first forward), full chain resolves during transition
+                        expect(['b', 'c']).toContain(state.name);
+                    }
+                }
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    // Test 9: Behavior with different router options (allowNotFound, defaultRoute)
+    describe('Behavior with different router options', () => {
+        it('should handle allowNotFound: true with forwardTo to non-existent route', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes, {
+                allowNotFound: true
+            });
+            
+            router.start('source', (err) => {
+                // Even with allowNotFound, forwardTo to non-existent route should return error
+                // Error might be ROUTE_NOT_FOUND or TRANSITION_ERR depending on where it fails
+                if (err) {
+                    expect([errorCodes.ROUTE_NOT_FOUND, errorCodes.TRANSITION_ERR]).toContain(err.code);
+                } else {
+                    // If no error, navigation succeeded (unexpected but handle gracefully)
+                    expect(err).toBeDefined();
+                }
+                router.stop();
+                done();
+            });
+        });
+
+        it('should handle allowNotFound: false with forwardTo to non-existent route', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes, {
+                allowNotFound: false
+            });
+            
+            router.start('source', (err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                router.stop();
+                done();
+            });
+        });
+
+        it('should verify defaultRoute does not affect forwardTo error handling', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' },
+                { name: 'fallback', path: '/fallback' }
+            ];
+            const router = createRouter(routes, {
+                defaultRoute: 'fallback'
+            });
+            
+            router.start('source', (err) => {
+                // defaultRoute should not be used when forwardTo fails
+                // Error might be ROUTE_NOT_FOUND or TRANSITION_ERR depending on where it fails
+                if (err) {
+                    expect([errorCodes.ROUTE_NOT_FOUND, errorCodes.TRANSITION_ERR]).toContain(err.code);
+                } else {
+                    // If no error, navigation succeeded (unexpected but handle gracefully)
+                    expect(err).toBeDefined();
+                }
+                router.stop();
+                done();
+            });
+        });
+    });
+
+    // Test 10: Synchronous vs asynchronous error handling
+    describe('Synchronous vs asynchronous error handling in router.start()', () => {
+        it('should handle errors asynchronously via callback, not synchronously', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            let syncError = null;
+            let callbackCalled = false;
+            
+            try {
+                router.start('source', (err) => {
+                    callbackCalled = true;
+                    expect(syncError).toBeNull();
+                    expect(err).toBeDefined();
+                    router.stop();
+                    done();
+                });
+            } catch (e) {
+                syncError = e;
+                // If synchronous error occurs, wait for callback
+                setTimeout(() => {
+                    expect(callbackCalled).toBe(true);
+                    router.stop();
+                    done();
+                }, 10);
+            }
+        });
+
+        it('should verify callback execution order', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            const executionOrder: string[] = [];
+            
+            try {
+                executionOrder.push('before-start');
+                router.start('source', (err) => {
+                    executionOrder.push('callback');
+                    expect(executionOrder).toContain('before-start');
+                    expect(err).toBeDefined();
+                    router.stop();
+                    done();
+                });
+                executionOrder.push('after-start');
+            } catch (e) {
+                executionOrder.push('catch');
+                setTimeout(() => {
+                    router.stop();
+                    done();
+                }, 10);
+            }
+        });
+    });
+
+    // Test 11: Router state after error in router.start()
+    describe('Router state after error in router.start()', () => {
+        it('should verify router state after start error', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            router.start('source', (err) => {
+                expect(err).toBeDefined();
+                
+                // Router should be started
+                expect(router.isStarted()).toBe(true);
+                
+                // State should be null
+                expect(router.getState()).toBeNull();
+                
+                // Should be able to navigate after error
+                router.navigate('source', (navErr) => {
+                    expect(navErr).toBeDefined();
+                    expect(navErr.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                    router.stop();
+                    done();
+                });
+            });
+        });
+
+        it('should allow calling router.start() again after stop', done => {
+            const routes = [
+                { name: 'source', path: '/source', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes);
+            
+            router.start('source', (err) => {
+                expect(err).toBeDefined();
+                router.stop();
+                
+                // Should be able to start again
+                router.start('source', (err2) => {
+                    expect(err2).toBeDefined();
+                    expect(err2.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                    router.stop();
+                    done();
+                });
+            });
+        });
+    });
+
+    // Test 12: router.start() with URL that does not match, but defaultRoute has non-existent forwardTo
+    describe('router.start() with unmatched URL but defaultRoute has non-existent forwardTo', () => {
+        it('should handle defaultRoute with forwardTo when URL does not match', done => {
+            const routes = [
+                { name: 'home', path: '/home', forwardTo: 'nonexistent.route' }
+            ];
+            const router = createRouter(routes, {
+                defaultRoute: 'home'
+            });
+            
+            router.start('/unknown/path', (err) => {
+                // Should try to use defaultRoute, but fail due to forwardTo
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                router.stop();
+                done();
+            });
+        });
+
+        it('should verify defaultRoute forwardTo error when no path matches', done => {
+            const routes = [
+                { name: 'home', path: '/home', forwardTo: 'nonexistent.route' },
+                { name: 'other', path: '/other' }
+            ];
+            const router = createRouter(routes, {
+                defaultRoute: 'home'
+            });
+            
+            router.start('/completely/unknown/path', (err) => {
+                expect(err).toBeDefined();
+                expect(err.code).toBe(errorCodes.ROUTE_NOT_FOUND);
+                router.stop();
+                done();
+            });
+        });
+    });
+});

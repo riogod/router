@@ -479,10 +479,19 @@ export default function withRoutes<Dependencies>(
                     name: routeName,
                     params: routeParams
                 } = router.forwardState(name, decodedParams)
-                const builtPath =
-                    options.rewritePathOnMatch === false
-                        ? path
-                        : router.buildPath(routeName, routeParams)
+                
+                let builtPath: string;
+                if (options.rewritePathOnMatch === false) {
+                    builtPath = path;
+                } else {
+                    try {
+                        builtPath = router.buildPath(routeName, routeParams);
+                    } catch (buildPathError) {
+                        // If buildPath throws error (e.g., due to forwardTo pointing to non-existent route),
+                        // return null to indicate no match
+                        return null;
+                    }
+                }
 
                 return router.makeState(routeName, routeParams, builtPath, {
                     params: meta,
